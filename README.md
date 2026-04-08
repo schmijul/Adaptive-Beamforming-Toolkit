@@ -38,6 +38,22 @@ python app.py
 
 Then open `http://127.0.0.1:8050`.
 
+## UI Preview
+
+Full dashboard view:
+
+![Dashboard overview](imgs/fullview.png)
+
+Key plots:
+
+![2D elevation cut](imgs/beam-cut.png)
+
+![Theta/Phi heatmap](imgs/beam-heatmap.png)
+
+![3D radiation pattern](imgs/beam-3d.png)
+
+![Amplitude and phase weights](imgs/beam-weights.png)
+
 ## Python API
 
 The native core is exposed as `core._beamforming_cpp` and re-exported via `core.beamforming`.
