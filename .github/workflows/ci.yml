@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test-and-build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: ["3.10", "3.11"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Install package
+        run: python -m pip install -e .
+
+      - name: Smoke import public namespace
+        run: python -c "import abf; from abf import algorithms, core, data, simulations, visualize"
+
+      - name: Run tests
+        run: pytest -q
+
+      - name: Build sdist and wheel
+        run: |
+          python -m pip install build
+          python -m build
+
+      - name: Upload build artifacts
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/*

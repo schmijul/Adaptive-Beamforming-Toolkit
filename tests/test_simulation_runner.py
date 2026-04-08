@@ -28,3 +28,11 @@ def test_single_and_montecarlo_runs_write_outputs(tmp_path) -> None:
 
     assert (tmp_path / "simulate.json").exists()
     assert (tmp_path / "montecarlo.json").exists()
+
+
+def test_default_conventional_scenario_has_stable_sinr_regression(tmp_path) -> None:
+    base = load_scenario_config("config/conventional.yaml")
+    config = replace(base, output=replace(base.output, directory=str(tmp_path), save_plots=False), snapshots=256)
+
+    single = run_single_simulation(config)
+    assert abs(single["result"]["sinr_db"] - 15.797460622963762) <= 1e-9

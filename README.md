@@ -1,52 +1,91 @@
 # Adaptive Beamforming Toolkit
 
-Interactive beamforming simulator with a C++ compute core and a Python UI layer.
+Adaptive Beamforming Toolkit is a research-oriented Python package for array-factor simulation, adaptive beamforming experiments, IQ snapshot generation, and interactive visualization. The repository combines a C++ compute core with a stable `abf.*` Python API, a small CLI, and a Dash dashboard.
 
-## Implemented core features
+## What You Get
 
-- C++ linear array factor core importable from Python
-- C++ planar array factor core importable from Python
-- Steering in `theta` and `phi`
-- `d/lambda` controls to compare `lambda/2` against larger spacing
-- Amplitude tapers: uniform, Hamming, Taylor
-- Separate amplitude and phase weights in the core model
-- Linear null-steering weights with active interference suppression
-- 2D cut, theta/phi heatmap, and interactive 3D pattern
-- Dash UI with live controls for the MVP dashboard
-- Near-field and far-field linear array models
-- Digital, analog, and hybrid beamforming weight synthesis
-- Wideband squint simulation with fixed phase-shifter weights
-- Element-pattern and mutual-coupling impairment modeling
-- MVDR weights and MUSIC DoA estimation utilities
-- IQ import helpers and simulation-vs-measurement comparison metrics
+- fast ULA and planar array-factor evaluation through `core._beamforming_cpp`
+- deterministic steering, tapering, and linear null steering
+- near-field focusing and far-field pattern evaluation
+- wideband beam-squint analysis for phase-steered arrays
+- simplified element-pattern and mutual-coupling impairment modeling
+- MVDR/Capon beamforming and MUSIC direction finding
+- IQ loading, synthesis, beamforming, and simulation-vs-measurement metrics
+- config-driven simulation runs and optional Plotly HTML outputs
 
-## Repo structure
+## Project Status
+
+The codebase is functional and test-backed, but it is best treated as a compact simulation and exploration toolkit, not as a hardened production beamforming stack.
+
+## Documentation Map
+
+The full documentation lives in [`docs/`](docs/):
+
+- [`docs/index.md`](docs/index.md): entry point and reading guide
+- [`docs/installation.md`](docs/installation.md): setup and verification
+- [`docs/getting-started.md`](docs/getting-started.md): first run through UI, CLI, and API
+- [`docs/theory.md`](docs/theory.md): beamforming fundamentals and tradeoffs
+- [`docs/signal-model.md`](docs/signal-model.md): notation, steering vectors, and covariance model
+- [`docs/algorithms.md`](docs/algorithms.md): implemented methods with formulas and interpretation
+- [`docs/examples.md`](docs/examples.md): executable examples based on current code
+- [`docs/api-reference.md`](docs/api-reference.md): module-level API overview
+
+## Repository Structure
 
 ```text
-core/        array math and weighting
-algorithms/  placeholder for MVDR, MUSIC, nulling
-visualize/   plot builders
-ui/          Dash dashboard
-data/        simulated and measured datasets
-notebooks/   demos
-docs/        theory notes
+core/         C++ extension and idealized array-factor interfaces
+algorithms/   adaptive beamforming and DoA estimation helpers
+abf/          stable public Python namespace for external users
+data/         IQ loading, simulation, and comparison utilities
+simulations/  YAML-driven simulation runner and output generation
+visualize/    Plotly figure builders
+ui/           Dash dashboard
+tests/        analytical and regression-style verification
+docs/         technical documentation
+examples/     runnable user-facing workflows
+config/       example scenario files
+imgs/         figures used by the docs
 ```
 
-## Build and run
+## Installation
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
+python -m pip install --upgrade pip
 pip install -r requirements.txt
 pip install -e .
-python app.py
 ```
 
-Then open `http://127.0.0.1:8050`.
+Requirements:
 
-## CLI and Reproducible Runs
+- Python 3.10+
+- a C++17-capable compiler
+- `pip` and virtual-environment support
 
-The toolkit now exposes a single CLI entrypoint:
+## Quick Start
+
+Launch the dashboard:
+
+```bash
+abf dashboard
+```
+
+Run one config-driven simulation:
+
+```bash
+abf simulate --config config/default.yaml
+```
+
+Run the tests:
+
+```bash
+pytest -q
+```
+
+## CLI
+
+The installed CLI entry point is `abf`.
 
 ```bash
 abf dashboard
@@ -55,47 +94,20 @@ abf montecarlo --config config/default.yaml --runs 50
 abf gallery --config config/default.yaml
 ```
 
-Two example scenarios are included:
+Current runner scope:
 
-- `config/default.yaml` (MVDR baseline)
-- `config/conventional.yaml` (conventional beamformer baseline)
+- array geometry: `ula`
+- algorithms: `conventional`, `mvdr`
 
-Each simulation writes JSON artifacts (and optional HTML plots) into the configured output directory.
+The broader Python API includes planar arrays, null steering, impairment models, near-field helpers, and MUSIC utilities beyond the current YAML runner surface.
 
-## UI Preview
-
-Full dashboard view:
-
-![Dashboard overview](imgs/fullview.png)
-
-Key plots:
-
-![2D elevation cut](imgs/beam-cut.png)
-
-![Theta/Phi heatmap](imgs/beam-heatmap.png)
-
-![3D radiation pattern](imgs/beam-3d.png)
-
-![Amplitude and phase weights](imgs/beam-weights.png)
-
-## Python API
-
-The native core is exposed as `core._beamforming_cpp` and re-exported via `core.beamforming`.
-
-Available entry points include:
-
-- `array_factor_linear(...)`
-- `array_factor_planar(...)`
-- `steering_weights_linear(...)`
-- `steering_weights_planar(...)`
-- `null_steering_weights_linear(...)`
-- `array_factor_linear_from_weights(...)`
-
-Example:
+## Python Example
 
 ```python
 import numpy as np
-from core.beamforming import array_factor_planar, null_steering_weights_linear
+
+from abf.core import array_factor_planar
+from abf.algorithms import linear_steering_vector
 
 theta = np.linspace(0.0, 180.0, 401)[:, None] * np.ones((1, 361))
 phi = np.ones((401, 1)) * np.linspace(-180.0, 180.0, 361)[None, :]
@@ -111,44 +123,70 @@ planar = array_factor_planar(
     phi_steer_deg=30.0,
 )
 
-weights = null_steering_weights_linear(
+steer = linear_steering_vector(
     num_elements=8,
     spacing_lambda=0.5,
-    theta_steer_deg=0.0,
-    phi_steer_deg=0.0,
-    null_thetas_deg=np.array([20.0]),
-    null_phis_deg=np.array([0.0]),
+    theta_deg=20.0,
+    phi_deg=0.0,
 )
 ```
 
+External code should prefer the `abf.*` namespace:
+
+- `abf.core`
+- `abf.algorithms`
+- `abf.data`
+- `abf.simulations`
+- `abf.visualize`
+
+The older package roots remain importable for compatibility, but they are no longer the recommended public interface.
+
+Runnable examples are included in `examples/`:
+
+- `python examples/linear_array_pattern.py`
+- `python examples/adaptive_mvdr_music.py`
+- `python examples/reproducible_cli_scenario.py`
+
+## Dashboard Preview
+
+![Dashboard overview](imgs/fullview.png)
+
+![2D elevation cut](imgs/beam-cut.png)
+
+![Theta/Phi heatmap](imgs/beam-heatmap.png)
+
+![3D radiation pattern](imgs/beam-3d.png)
+
+![Amplitude and phase weights](imgs/beam-weights.png)
+
 ## Verification
 
-The core has analytical and reference-driven tests for:
+The test suite checks both numerical behavior and higher-level workflows, including:
 
-- linear steering accuracy
-- half-power beamwidth
-- sidelobe levels
-- grating lobes
+- steering accuracy and beam pointing
+- half-power beamwidth and sidelobe behavior
+- grating lobes for large spacing
 - taper correctness
-- planar array factor against an independent NumPy reference
-- null-steering constraint satisfaction and notch formation
+- planar-array agreement with an independent NumPy reference
+- deterministic null formation
+- near-field, wideband, and impairment-aware models
+- MVDR, MUSIC, and IQ-data utilities
 
-Run them with:
+Run all tests with:
 
 ```bash
-source .venv/bin/activate
 pytest -q
 ```
 
-Current status: `13 passed`
+In this branch, test coverage also includes:
 
-## Completed extensions
+- the public `abf` namespace
+- CLI JSON output and invalid-config handling
+- runnable example scripts
 
-The roadmap items from the MVP have been implemented in the Python layer:
+## References
 
-- `core.advanced_models.array_factor_linear_field_mode(...)` for near-field/far-field modeling
-- `core.advanced_models.synthesize_beamforming_architecture(...)` for analog/digital/hybrid approximations
-- `core.advanced_models.wideband_array_factor_linear(...)` for beam-squint analysis
-- `core.advanced_models.array_factor_linear_with_impairments(...)` and `build_mutual_coupling_matrix(...)`
-- `algorithms.adaptive.mvdr_weights(...)` and `algorithms.adaptive.doa_music_linear(...)`
-- `data.iq` helpers for IQ load/simulate/beamform and sim-vs-measurement overlays
+- C. A. Balanis, *Antenna Theory: Analysis and Design*, 4th ed., Wiley. https://bcs.wiley.com/he-bcs/Books?action=contents&bcsId=9777&itemId=1118642066
+- R. J. Mailloux, *Phased Array Antenna Handbook*, 3rd ed., Artech House. https://us.artechhouse.com/Phased-Array-Antenna-Handbook-Third-Edition-P1938.aspx
+- J. Capon, "High-resolution frequency-wavenumber spectrum analysis," *Proceedings of the IEEE*, 1969. https://ieeexplore.ieee.org/document/1449208
+- R. O. Schmidt, "Multiple emitter location and signal parameter estimation," *IEEE Transactions on Antennas and Propagation*, 1986. https://ieeexplore.ieee.org/document/1143830/
