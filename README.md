@@ -13,6 +13,12 @@ Interactive beamforming simulator with a C++ compute core and a Python UI layer.
 - Linear null-steering weights with active interference suppression
 - 2D cut, theta/phi heatmap, and interactive 3D pattern
 - Dash UI with live controls for the MVP dashboard
+- Near-field and far-field linear array models
+- Digital, analog, and hybrid beamforming weight synthesis
+- Wideband squint simulation with fixed phase-shifter weights
+- Element-pattern and mutual-coupling impairment modeling
+- MVDR weights and MUSIC DoA estimation utilities
+- IQ import helpers and simulation-vs-measurement comparison metrics
 
 ## Repo structure
 
@@ -118,11 +124,13 @@ pytest -q
 
 Current status: `13 passed`
 
-## Next steps
+## Completed extensions
 
-- Near-field vs far-field toggle
-- Analog/digital/hybrid beamforming models
-- Wideband beam squint
-- Element patterns and mutual coupling
-- MVDR and MUSIC
-- IQ import and sim vs measurement overlays
+The roadmap items from the MVP have been implemented in the Python layer:
+
+- `core.advanced_models.array_factor_linear_field_mode(...)` for near-field/far-field modeling
+- `core.advanced_models.synthesize_beamforming_architecture(...)` for analog/digital/hybrid approximations
+- `core.advanced_models.wideband_array_factor_linear(...)` for beam-squint analysis
+- `core.advanced_models.array_factor_linear_with_impairments(...)` and `build_mutual_coupling_matrix(...)`
+- `algorithms.adaptive.mvdr_weights(...)` and `algorithms.adaptive.doa_music_linear(...)`
+- `data.iq` helpers for IQ load/simulate/beamform and sim-vs-measurement overlays
