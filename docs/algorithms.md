@@ -1,105 +1,122 @@
 # Algorithms
 
-This document describes the currently implemented methods, including the signal model and the underlying formulas.
+This document summarizes the methods currently implemented in the repository. The emphasis is on what the code actually does, not on every possible beamforming variant from the literature.
 
-## 1) Array and Signal Model (Narrowband)
+## 1. Conventional Steering
 
-For a linear array along the x-axis with element positions \(x_n\) measured in wavelengths:
+For a desired look direction `(theta_0, phi_0)`, conventional beamforming applies the conjugate steering law
 
-\[
-u(\theta,\phi)=\sin(\theta)\cos(\phi), \quad
-a_n(\theta,\phi)=e^{j2\pi x_n u(\theta,\phi)}
-\]
+```math
+\mathbf{w} \propto \mathbf{a}(\theta_0,\phi_0)
+```
 
-The array output with weights \(w_n\) is:
+or, element-wise for the ULA model,
 
-\[
-y(\theta,\phi)=\sum_{n=1}^{N} w_n\,a_n(\theta,\phi), \quad
-AF(\theta,\phi)=|y(\theta,\phi)|
-\]
+```math
+w_n = \alpha_n e^{-j 2 \pi x_n u(\theta_0,\phi_0)}
+```
 
-In code:
+where:
+
+- `alpha_n` is the amplitude taper
+- `x_n` is the centered element position in wavelengths
+- `u(theta, phi) = sin(theta) cos(phi)`
+
+In the codebase, this is exposed through:
+
+- `core.beamforming.steering_weights_linear(...)`
+- `core.beamforming.steering_weights_planar(...)`
 - `core.beamforming.array_factor_linear(...)`
 - `core.beamforming.array_factor_planar(...)`
 
-## 2) Conventional Steering and Tapering
+Use this method when you want deterministic steering without data-dependent adaptation.
 
-For a look direction \((\theta_0,\phi_0)\):
+## 2. Deterministic Null Steering
 
-\[
-w_n = \alpha_n \, e^{-j2\pi x_n u(\theta_0,\phi_0)}
-\]
+Null steering imposes linear constraints on the beam response:
 
-\(\alpha_n\) is the amplitude taper (uniform, Hamming, Taylor).
+```math
+\mathbf{w}^H \mathbf{a}(\theta_0,\phi_0)=1
+```
 
-In code:
-- `core.beamforming.steering_weights_linear(...)`
-- `core.beamforming.amplitude_taper(...)`
+and
 
-## 3) Null Steering (Deterministic Constraints)
+```math
+\mathbf{w}^H \mathbf{a}(\theta_k,\phi_k)=0, \quad k=1,\dots,K
+```
 
-The goal is to find weights satisfying:
+The implementation constructs the constraint matrix from the desired steering vector and the null directions, then solves the corresponding linear system in the constraint space.
 
-\[
-w^H a(\theta_0,\phi_0)=1, \quad
-w^H a(\theta_k,\phi_k)=0 \;\; \forall k\in\{1,\dots,K\}
-\]
+Implemented entry point:
 
-The implementation builds a constraint matrix and solves a linear system in the constraint space.
-
-In code:
 - `core.beamforming.null_steering_weights_linear(...)`
 
 Reference figure:
 
 ![Null steering comparison](../imgs/alg-null-steering.png)
 
-The baseline steered beam preserves the main lobe at broadside, while the constrained solution places a deep notch at the interference angle.
+Interpretation:
 
-## 4) MVDR (Capon)
+- the main beam is preserved at the desired direction
+- deep notches are forced at the specified interference angles
+- the method is deterministic and does not estimate covariance from data
 
-Optimization problem:
+## 3. MVDR / Capon Beamforming
 
-\[
-\min_w \; w^H R w
-\quad \text{s.t.} \quad
-w^H a_0 = 1
-\]
+MVDR chooses weights that minimize output power while maintaining unit gain in the desired direction:
 
-Closed-form solution:
+```math
+\min_{\mathbf{w}} \mathbf{w}^H \mathbf{R} \mathbf{w}
+\quad \text{subject to} \quad
+\mathbf{w}^H \mathbf{a}_0 = 1
+```
 
-\[
-w_{\text{MVDR}} = \frac{R^{-1}a_0}{a_0^H R^{-1} a_0}
-\]
+The closed-form solution is
 
-With optional diagonal loading:
+```math
+\mathbf{w}_{MVDR} =
+\frac{\mathbf{R}^{-1}\mathbf{a}_0}
+{\mathbf{a}_0^H \mathbf{R}^{-1}\mathbf{a}_0}
+```
 
-\[
-R_\delta = R + \delta I
-\]
+The repository estimates `R` from data and optionally applies diagonal loading:
 
-In code:
-- `algorithms.adaptive.mvdr_weights(...)`
+```math
+\mathbf{R}_\delta = \mathbf{R} + \delta \mathbf{I}
+```
+
+Implemented entry points:
+
 - `algorithms.adaptive.estimate_covariance_matrix(...)`
+- `algorithms.adaptive.mvdr_weights(...)`
 
-## 5) MUSIC (DoA Estimation)
+Practical notes:
 
-Eigen-decomposition of the covariance matrix:
+- MVDR needs a steering vector that matches the assumed signal model.
+- It is sensitive to covariance conditioning and model mismatch.
+- Diagonal loading is often the first stabilization step.
 
-\[
-R = E_s \Lambda_s E_s^H + E_n \Lambda_n E_n^H
-\]
+## 4. MUSIC DoA Estimation
 
-Pseudo-spectrum:
+MUSIC is a subspace-based direction-of-arrival estimator. It starts from the covariance eigendecomposition:
 
-\[
-P_{\text{MUSIC}}(\theta,\phi) =
-\frac{1}{a^H(\theta,\phi)\,E_nE_n^H\,a(\theta,\phi)}
-\]
+```math
+\mathbf{R} = \mathbf{E}_s \mathbf{\Lambda}_s \mathbf{E}_s^H +
+\mathbf{E}_n \mathbf{\Lambda}_n \mathbf{E}_n^H
+```
 
-Peaks of \(P_{\text{MUSIC}}\) provide the estimated directions of arrival.
+where `E_s` spans the signal subspace and `E_n` spans the noise subspace. For a correct steering vector, the true source directions ideally satisfy orthogonality with the noise subspace. The pseudospectrum is therefore
 
-In code:
+```math
+P_{MUSIC}(\theta,\phi) =
+\frac{\|\mathbf{a}(\theta,\phi)\|^2}
+\|\mathbf{E}_n^H \mathbf{a}(\theta,\phi)\|^2}
+```
+
+The code computes this over a scan grid and returns the largest peaks.
+
+Implemented entry points:
+
 - `algorithms.adaptive.music_spectrum(...)`
 - `algorithms.adaptive.doa_music_linear(...)`
 
@@ -107,61 +124,75 @@ Reference figure:
 
 ![MUSIC pseudospectrum](../imgs/alg-music-spectrum.png)
 
-This plot shows the MUSIC pseudospectrum for two simulated sources. The sharp peaks are the practical counterpart of the denominator \(a^H E_n E_n^H a\) approaching zero near the true DoAs.
+Important boundary:
 
-## 6) Near-Field Focusing
+- the current helper requires the number of sources as an input parameter; it does not estimate model order
 
-In the near field, the phase depends on the true distance \(r_n\) from each element to the focus point:
+## 5. Near-Field Focusing
 
-\[
-r_n = \|p_{\text{focus}} - p_n\|, \quad
-w_n \propto e^{-j2\pi r_n}
-\]
+The near-field model replaces the plane-wave approximation with an element-to-focus distance law:
 
-In the far field, this is replaced by the plane-wave approximation, which produces a linear phase progression over \(x_n\).
+```math
+r_n = \lVert \mathbf{p}_{focus} - \mathbf{p}_n \rVert
+```
 
-In code:
+and
+
+```math
+w_n \propto e^{-j 2 \pi r_n}
+```
+
+This causes the phase compensation to depend on actual range, not only on direction. The implementation supports both dedicated near-field evaluation and a convenience wrapper that switches between far and near modes.
+
+Implemented entry points:
+
 - `core.advanced_models.steering_weights_near_field_linear(...)`
+- `core.advanced_models.array_factor_linear_near_field(...)`
 - `core.advanced_models.array_factor_linear_field_mode(...)`
 
 Reference figure:
 
 ![Near-field versus far-field](../imgs/alg-near-vs-far.png)
 
-The near-field solution does not follow the same angular cut as the far-field plane-wave model, because the phase law is driven by distance-to-focus instead of a single direction cosine.
+## 6. Wideband Beam-Squint Analysis
 
-## 7) Wideband Response and Beam Squint
+The wideband helper assumes phase-shifter weights are designed at a center frequency `f_0` and then evaluated at other frequencies. The effective electrical spacing scales as
 
-Phase-shifter weights are designed for \(f_0\). For \(f \neq f_0\), the electrical spacing scales as:
+```math
+d_{eff}(f) = d \frac{f}{f_0}
+```
 
-\[
-d_{\text{eff}}(f)=d\frac{f}{f_0}
-\]
+so the beam direction changes with frequency. This is the classical beam-squint effect of phase-only steering.
 
-As a result, the main lobe shifts with frequency, which is the beam-squint effect.
+Implemented entry point:
 
-In code:
 - `core.advanced_models.wideband_array_factor_linear(...)`
 
 Reference figure:
 
 ![Wideband beam squint](../imgs/alg-wideband-squint.png)
 
-The main-lobe peak moves with frequency because a fixed phase-shifter network only matches the steering law exactly at the center frequency.
+## 7. Element Patterns and Mutual Coupling
 
-## 8) Element Patterns and Mutual Coupling
+The impairment-aware array model modifies the ideal response in two ways:
 
-The overall response can be written in simplified form as:
+1. It replaces isotropic elements with a scalar directional element gain `g(theta, phi)`.
+2. It applies a coupling matrix `C` to the nominal weights.
 
-\[
-y(\theta,\phi)=g(\theta,\phi)\sum_n \tilde{w}_n a_n(\theta,\phi),
-\quad \tilde{w}=Cw
-\]
+In simplified form:
 
-- \(g(\theta,\phi)\): element pattern, for example isotropic, cosine, or cardioid
-- \(C\): coupling matrix representing mutual coupling
+```math
+\tilde{\mathbf{w}} = \mathbf{C}\mathbf{w}
+```
 
-In code:
+and
+
+```math
+H(\theta,\phi) = g(\theta,\phi)\,\tilde{\mathbf{w}}^H \mathbf{a}(\theta,\phi)
+```
+
+Implemented entry points:
+
 - `core.advanced_models.element_pattern_gain(...)`
 - `core.advanced_models.build_mutual_coupling_matrix(...)`
 - `core.advanced_models.array_factor_linear_with_impairments(...)`
@@ -170,20 +201,33 @@ Reference figure:
 
 ![Impairment-aware pattern](../imgs/alg-impairments.png)
 
-Compared with the ideal isotropic response, the cosine element pattern and coupling matrix reshape the cut and suppress energy near endfire.
+## 8. Digital, Analog, and Hybrid Architectures
 
-## 9) Architecture Models: Digital / Analog / Hybrid
+The repository also includes a simplified architecture-level mapping from ideal complex weights to three implementation styles:
 
-- Digital: one complex weight \(w_n\) per element
-- Analog: RF phase-shifter weights with constant magnitude
-- Hybrid: \(w \approx F_{\text{RF}} w_{\text{BB}}\)
+- digital beamforming: one complex degree of freedom per element
+- analog beamforming: phase-only or quantized RF weights
+- hybrid beamforming: a small RF network plus reduced-dimension digital weights
 
-In code:
+The current implementation is not a full hybrid-beamforming optimizer. It is a compact approximation helper useful for comparing how architectural constraints distort ideal weights.
+
+Implemented entry point:
+
 - `core.advanced_models.synthesize_beamforming_architecture(...)`
 
-## 10) Not Implemented
+## 9. Not Implemented as Dedicated Solvers
 
-The following methods are currently not implemented as dedicated solvers:
+The repository does not currently ship dedicated implementations of:
+
 - LMS / NLMS / RLS
-- Frost
-- full generic LCMV
+- Frost beamforming
+- a general LCMV solver
+- sparse recovery DoA estimators
+- STAP or true time-delay wideband beamforming
+
+## References
+
+- J. Capon, "High-resolution frequency-wavenumber spectrum analysis," *Proceedings of the IEEE*, 1969. https://ieeexplore.ieee.org/document/1449208
+- R. O. Schmidt, "Multiple emitter location and signal parameter estimation," *IEEE Transactions on Antennas and Propagation*, 1986. https://ieeexplore.ieee.org/document/1143830/
+- R. J. Mailloux, *Phased Array Antenna Handbook*, 3rd ed., Artech House. https://us.artechhouse.com/Phased-Array-Antenna-Handbook-Third-Edition-P1938.aspx
+- C. A. Balanis, *Antenna Theory: Analysis and Design*, 4th ed., Wiley. https://bcs.wiley.com/he-bcs/Books?action=contents&bcsId=9777&itemId=1118642066
