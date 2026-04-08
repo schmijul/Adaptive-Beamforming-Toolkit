@@ -50,6 +50,12 @@ The implementation builds a constraint matrix and solves a linear system in the 
 In code:
 - `core.beamforming.null_steering_weights_linear(...)`
 
+Reference figure:
+
+![Null steering comparison](../imgs/alg-null-steering.png)
+
+The baseline steered beam preserves the main lobe at broadside, while the constrained solution places a deep notch at the interference angle.
+
 ## 4) MVDR (Capon)
 
 Optimization problem:
@@ -97,6 +103,12 @@ In code:
 - `algorithms.adaptive.music_spectrum(...)`
 - `algorithms.adaptive.doa_music_linear(...)`
 
+Reference figure:
+
+![MUSIC pseudospectrum](../imgs/alg-music-spectrum.png)
+
+This plot shows the MUSIC pseudospectrum for two simulated sources. The sharp peaks are the practical counterpart of the denominator \(a^H E_n E_n^H a\) approaching zero near the true DoAs.
+
 ## 6) Near-Field Focusing
 
 In the near field, the phase depends on the true distance \(r_n\) from each element to the focus point:
@@ -112,6 +124,12 @@ In code:
 - `core.advanced_models.steering_weights_near_field_linear(...)`
 - `core.advanced_models.array_factor_linear_field_mode(...)`
 
+Reference figure:
+
+![Near-field versus far-field](../imgs/alg-near-vs-far.png)
+
+The near-field solution does not follow the same angular cut as the far-field plane-wave model, because the phase law is driven by distance-to-focus instead of a single direction cosine.
+
 ## 7) Wideband Response and Beam Squint
 
 Phase-shifter weights are designed for \(f_0\). For \(f \neq f_0\), the electrical spacing scales as:
@@ -124,6 +142,12 @@ As a result, the main lobe shifts with frequency, which is the beam-squint effec
 
 In code:
 - `core.advanced_models.wideband_array_factor_linear(...)`
+
+Reference figure:
+
+![Wideband beam squint](../imgs/alg-wideband-squint.png)
+
+The main-lobe peak moves with frequency because a fixed phase-shifter network only matches the steering law exactly at the center frequency.
 
 ## 8) Element Patterns and Mutual Coupling
 
@@ -141,6 +165,12 @@ In code:
 - `core.advanced_models.element_pattern_gain(...)`
 - `core.advanced_models.build_mutual_coupling_matrix(...)`
 - `core.advanced_models.array_factor_linear_with_impairments(...)`
+
+Reference figure:
+
+![Impairment-aware pattern](../imgs/alg-impairments.png)
+
+Compared with the ideal isotropic response, the cosine element pattern and coupling matrix reshape the cut and suppress energy near endfire.
 
 ## 9) Architecture Models: Digital / Analog / Hybrid
 
