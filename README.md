@@ -44,6 +44,24 @@ python app.py
 
 Then open `http://127.0.0.1:8050`.
 
+## CLI and Reproducible Runs
+
+The toolkit now exposes a single CLI entrypoint:
+
+```bash
+abf dashboard
+abf simulate --config config/default.yaml
+abf montecarlo --config config/default.yaml --runs 50
+abf gallery --config config/default.yaml
+```
+
+Two example scenarios are included:
+
+- `config/default.yaml` (MVDR baseline)
+- `config/conventional.yaml` (conventional beamformer baseline)
+
+Each simulation writes JSON artifacts (and optional HTML plots) into the configured output directory.
+
 ## UI Preview
 
 Full dashboard view:

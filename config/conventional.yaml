@@ -1,0 +1,33 @@
+name: baseline_conventional
+seed: 42
+snapshots: 2048
+
+array:
+  geometry: ula
+  num_elements: 12
+  spacing_lambda: 0.5
+
+desired_source:
+  theta_deg: 20.0
+  phi_deg: 0.0
+  snr_db: 15.0
+
+interference_sources:
+  - theta_deg: 45.0
+    phi_deg: 0.0
+    snr_db: 20.0
+
+algorithm:
+  name: conventional
+
+sweep:
+  theta_start_deg: 0.0
+  theta_stop_deg: 180.0
+  theta_num: 241
+  phi_start_deg: -180.0
+  phi_stop_deg: 180.0
+  phi_num: 241
+
+output:
+  directory: outputs/baseline_conventional
+  save_plots: true
