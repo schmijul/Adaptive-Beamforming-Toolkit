@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from core.beamforming import amplitude_taper, array_factor_linear
+from core.beamforming import amplitude_taper, array_factor_linear, element_positions_planar
 
 
 def _direction_cosines(theta_deg: np.ndarray, phi_deg: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
@@ -241,6 +241,56 @@ def wideband_array_factor_linear(
         "magnitude": magnitude,
         "magnitude_db": magnitude_db,
         "weights_center_frequency": fixed_weights,
+    }
+
+
+def array_factor_planar_from_weights(
+    weights: np.ndarray,
+    num_x: int,
+    num_y: int,
+    spacing_x_lambda: float,
+    spacing_y_lambda: float,
+    theta_grid_deg: np.ndarray,
+    phi_grid_deg: np.ndarray,
+) -> dict[str, np.ndarray]:
+    if theta_grid_deg.shape != phi_grid_deg.shape:
+        raise ValueError("theta_grid_deg and phi_grid_deg must have the same shape")
+
+    w = np.asarray(weights, dtype=np.complex128).reshape(-1)
+    positions = np.asarray(
+        element_positions_planar(
+            num_x=num_x,
+            num_y=num_y,
+            spacing_x_lambda=spacing_x_lambda,
+            spacing_y_lambda=spacing_y_lambda,
+        ),
+        dtype=float,
+    )
+    if positions.shape != (num_x * num_y, 2):
+        raise ValueError("element_positions_planar returned an unexpected shape")
+    if w.size != positions.shape[0]:
+        raise ValueError("weights length must match num_x * num_y")
+
+    theta_rad = np.deg2rad(theta_grid_deg)
+    phi_rad = np.deg2rad(phi_grid_deg)
+    ux = np.sin(theta_rad) * np.cos(phi_rad)
+    uy = np.sin(theta_rad) * np.sin(phi_rad)
+
+    response = np.zeros(theta_grid_deg.shape, dtype=np.complex128)
+    x_flat = positions[:, 0]
+    y_flat = positions[:, 1]
+    for idx, weight in enumerate(w):
+        response += weight * np.exp(1j * 2.0 * np.pi * (x_flat[idx] * ux + y_flat[idx] * uy))
+
+    magnitude = np.abs(response)
+    magnitude /= magnitude.max() + 1e-12
+    magnitude_db = 20.0 * np.log10(np.maximum(magnitude, 1e-12))
+    return {
+        "response": response,
+        "magnitude": magnitude,
+        "magnitude_db": magnitude_db,
+        "weights": w,
+        "positions_xy_lambda": positions,
     }
 
 

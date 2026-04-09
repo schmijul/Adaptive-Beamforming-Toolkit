@@ -36,6 +36,8 @@ This module re-exports the native C++ extension and is the main entry point for 
   Evaluates the normalized planar-array response on a `(theta, phi)` grid.
 - `array_factor_linear_from_weights(...)`
   Evaluates the ULA response for a user-supplied complex weight vector.
+- `array_factor_planar_from_weights(...)`
+  Evaluates the planar-array response for a user-supplied complex weight vector.
 
 Typical outputs from the array-factor functions include:
 
@@ -74,10 +76,30 @@ This module contains covariance-based adaptive processing helpers.
 
 - `estimate_covariance_matrix(snapshots, diagonal_loading=0.0)`
   Computes the sample covariance from a snapshot matrix with shape `(num_elements, num_snapshots)`.
+- `estimate_wideband_covariance_matrices(frequency_snapshots, diagonal_loading=0.0)`
+  Computes one covariance matrix per frequency bin for arrays with shape `(num_frequency_bins, num_elements, num_snapshots)`.
 - `linear_steering_vector(num_elements, spacing_lambda, theta_deg, phi_deg=0.0)`
   Returns the narrowband ULA steering vector used by the adaptive routines.
+- `planar_steering_vector(num_x, num_y, spacing_x_lambda, spacing_y_lambda, theta_deg, phi_deg=0.0)`
+  Returns a narrowband planar steering vector with the same flattening order used by the core planar helpers.
 - `mvdr_weights(covariance_matrix, steering_vector, diagonal_loading=1e-3)`
   Computes MVDR/Capon weights.
+- `lms_weights(snapshots, desired_signal, ...)`
+  Runs complex LMS adaptation and returns final weights plus output and error traces.
+- `nlms_weights(snapshots, desired_signal, ...)`
+  Runs normalized LMS adaptation.
+- `rls_weights(snapshots, desired_signal, ...)`
+  Runs recursive least-squares adaptation.
+- `wideband_linear_steering_vectors(...)`
+  Returns one ULA steering vector per frequency bin.
+- `wideband_mvdr_weights(covariance_matrices, steering_vectors, diagonal_loading=1e-3)`
+  Solves MVDR independently across frequency bins.
+- `beamform_frequency_snapshots(frequency_snapshots, weights)`
+  Applies per-bin weights to frequency-domain snapshots.
+- `mimo_virtual_steering_vector_linear(...)`
+  Builds a simple virtual-array steering vector from separable Tx/Rx ULAs.
+- `polarimetric_steering_vector(spatial_steering_vector, polarization_vector)`
+  Stacks a spatial steering vector with a polarization response through a Kronecker product.
 - `music_spectrum(covariance_matrix, scan_manifold, num_sources)`
   Evaluates the MUSIC pseudospectrum for a scan manifold.
 - `doa_music_linear(...)`
@@ -97,7 +119,13 @@ This module covers simple IQ ingest, synthesis, beamforming, and comparison.
 - `load_iq_samples(path)`
   Loads IQ data from `.npy`, `.npz`, `.csv`, or `.txt`.
 - `simulate_array_iq(...)`
-  Generates complex array snapshots from one or more synthetic sources plus noise.
+  Generates ULA or planar-array snapshots from one or more synthetic sources plus noise.
+- `simulate_array_iq_components(...)`
+  Returns snapshots, source signals, steering vectors, and noise for supervised/adaptive workflows.
+- `simulate_mimo_iq(...)`
+  Generates simple virtual-array MIMO snapshots.
+- `simulate_polarimetric_array_iq(...)`
+  Generates dual- or multi-polarization stacked snapshots from user-supplied source polarization vectors.
 - `beamform_iq(iq_snapshots, weights)`
   Applies complex beamforming weights to snapshot data.
 - `compare_sim_vs_measurement(simulated, measured)`
@@ -111,13 +139,13 @@ The config-driven simulation runner is the backend behind the CLI.
   Parses and validates a YAML scenario file.
 - `run_single_simulation(config)`
   Runs one deterministic simulation and writes a JSON artifact.
-- `run_monte_carlo(config, runs)`
+- `run_monte_carlo(config, runs, jobs=1)`
   Repeats the scenario over multiple seeds and writes a Monte Carlo summary.
 
 Current supported runner scope:
 
-- `array.geometry`: `ula`
-- `algorithm.name`: `conventional`, `mvdr`
+- `array.geometry`: `ula`, `planar`
+- `algorithm.name`: `conventional`, `mvdr`, `lms`, `nlms`, `rls`
 
 Common top-level return keys:
 
@@ -146,5 +174,5 @@ Supported subcommands:
 
 - `abf dashboard`
 - `abf simulate --config <path>`
-- `abf montecarlo --config <path> --runs <n>`
+- `abf montecarlo --config <path> --runs <n> --jobs <m>`
 - `abf gallery --config <path>`

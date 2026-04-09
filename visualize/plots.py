@@ -92,6 +92,7 @@ def build_weights_plot(
     positions_lambda: np.ndarray,
     amplitudes: np.ndarray,
     phase_weights: np.ndarray,
+    xaxis_title: str = "Element Position (lambda)",
 ) -> go.Figure:
     phase_deg = np.rad2deg(np.angle(phase_weights))
     fig = make_subplots(specs=[[{"secondary_y": True}]])
@@ -117,7 +118,7 @@ def build_weights_plot(
     fig.update_layout(
         template="plotly_white",
         title="Separated Amplitude / Phase Control",
-        xaxis_title="Element Position (lambda)",
+        xaxis_title=xaxis_title,
         margin={"l": 50, "r": 50, "t": 50, "b": 50},
     )
     fig.update_yaxes(title_text="Amplitude", secondary_y=False, range=[0, 1.1])

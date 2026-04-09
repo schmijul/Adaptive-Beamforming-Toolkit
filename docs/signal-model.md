@@ -124,7 +124,7 @@ This is a convenient stochastic model for testing covariance-based algorithms, e
 
 ## Planar and Extended Models
 
-The core C++ module also supports planar arrays, but the adaptive helper functions in `algorithms.adaptive` currently expose a ULA-centric steering interface. The additional models in `core.advanced_models` extend the same general framework to:
+The repository now includes both ULA and planar steering helpers for adaptive processing. The additional models in `core.advanced_models` extend the same general framework to:
 
 - near-field focusing
 - wideband response evaluation
@@ -139,6 +139,7 @@ These models remain simplified and are meant for comparative simulation rather t
 The current signal model is intentionally compact. Important assumptions are:
 
 - narrowband complex-baseband representation for adaptive processing
+- optional per-frequency-bin wideband processing for frequency-domain MVDR
 - stationary covariance over the snapshot batch
 - no calibration errors unless impairments are explicitly added
 - no coherent multipath or model-order estimation logic beyond the provided MUSIC input parameter
@@ -147,10 +148,17 @@ The current signal model is intentionally compact. Important assumptions are:
 ## Mapping to Code
 
 - `algorithms.adaptive.linear_steering_vector(...)`: ULA steering vector
+- `algorithms.adaptive.planar_steering_vector(...)`: planar steering vector
 - `algorithms.adaptive.estimate_covariance_matrix(...)`: sample covariance estimator
 - `algorithms.adaptive.mvdr_weights(...)`: MVDR/Capon weights from covariance plus steering vector
+- `algorithms.adaptive.lms_weights(...)`: supervised LMS adaptation
+- `algorithms.adaptive.nlms_weights(...)`: supervised normalized LMS adaptation
+- `algorithms.adaptive.rls_weights(...)`: supervised RLS adaptation
+- `algorithms.adaptive.wideband_mvdr_weights(...)`: per-bin MVDR for frequency-domain snapshots
 - `algorithms.adaptive.doa_music_linear(...)`: MUSIC scan over a theta grid
 - `data.iq.simulate_array_iq(...)`: synthetic snapshot generator
+- `data.iq.simulate_mimo_iq(...)`: virtual-array MIMO snapshot generator
+- `data.iq.simulate_polarimetric_array_iq(...)`: stacked polarimetric snapshot generator
 - `data.iq.beamform_iq(...)`: direct weighted combination of snapshots
 
 ## References

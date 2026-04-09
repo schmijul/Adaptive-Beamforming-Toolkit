@@ -215,15 +215,29 @@ Implemented entry point:
 
 - `core.advanced_models.synthesize_beamforming_architecture(...)`
 
-## 9. Not Implemented as Dedicated Solvers
+## 9. Current Adaptive Scope and Omissions
+
+The repository's adaptive-processing surface now includes:
+
+- conventional steering is available as the deterministic baseline
+- MVDR/Capon for covariance-based adaptive nulling
+- LMS, NLMS, and RLS for supervised adaptive weight updates
+- per-frequency-bin wideband MVDR helpers for frequency-domain snapshot data
+- MUSIC is available for DoA estimation, not for adaptive weight synthesis
+- simple MIMO and polarimetric helper models in the Python API
 
 The repository does not currently ship dedicated implementations of:
 
-- LMS / NLMS / RLS
 - Frost beamforming
 - a general LCMV solver
 - sparse recovery DoA estimators
 - STAP or true time-delay wideband beamforming
+
+Related boundaries:
+
+- MUSIC scanning remains ULA-centric
+- wideband adaptive processing is frequency-domain and per-bin, not a full waveform-preserving time-delay beamformer
+- the MIMO and polarimetric paths are compact simulation helpers rather than a complete system model
 
 ## References
 

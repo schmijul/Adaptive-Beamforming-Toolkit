@@ -21,6 +21,7 @@ def _build_parser() -> argparse.ArgumentParser:
     monte = sub.add_parser("montecarlo", help="Run a Monte-Carlo simulation from a YAML config")
     monte.add_argument("--config", default="config/default.yaml")
     monte.add_argument("--runs", type=int, default=30)
+    monte.add_argument("--jobs", type=int, default=1)
 
     gallery = sub.add_parser("gallery", help="Generate reproducible gallery plots from a YAML config")
     gallery.add_argument("--config", default="config/default.yaml")
@@ -46,7 +47,7 @@ def main() -> None:
         return
 
     if args.command == "montecarlo":
-        payload = run_monte_carlo(config, runs=args.runs)
+        payload = run_monte_carlo(config, runs=args.runs, jobs=args.jobs)
         print(json.dumps({"mode": payload["mode"], "summary": payload["summary"], "out_dir": config.output.directory}, indent=2))
         return
 

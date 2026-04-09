@@ -7,19 +7,20 @@ The repository is intentionally focused on compact, test-backed beamforming work
 - ideal ULA and planar-array factors
 - deterministic steering and null steering
 - selected advanced models for near-field, wideband, and impairments
-- covariance-based MVDR and MUSIC utilities
-- lightweight IQ simulation and comparison helpers
+- covariance-based MVDR, LMS, NLMS, RLS, and MUSIC utilities
+- lightweight IQ simulation plus planar, MIMO, and polarimetric helpers
 - a dashboard and config-driven CLI
 
 ## Simplifications
 
 Several models are deliberately simplified for clarity and speed:
 
-- the adaptive routines use a narrowband ULA steering model
-- the wideband model demonstrates beam squint, not true time-delay beamforming
+- the adaptive routines are still based on narrowband or per-frequency-bin models
+- wideband support includes subband MVDR helpers, but not true time-delay beamforming or STAP
 - the impairment model is first-order and not a full calibration framework
-- the simulation runner currently supports only `ula` geometry
-- the simulation runner currently supports only `conventional` and `mvdr`
+- the simulation runner currently supports `ula` and `planar` geometries
+- the simulation runner currently supports `conventional`, `mvdr`, `lms`, `nlms`, and `rls`
+- MIMO and polarimetric workflows are Python-API helpers rather than first-class CLI modes
 
 ## What The Toolkit Is Good For
 
@@ -38,6 +39,7 @@ The current codebase should not be mistaken for:
 - a calibrated measurement-processing framework
 - a full electromagnetic solver
 - a comprehensive research benchmark suite covering modern adaptive methods
+- a real-time embedded beamforming runtime
 
 ## Recommended Extensions
 
@@ -45,6 +47,5 @@ If the toolkit grows further, the next technically coherent additions would be:
 
 - general LCMV constraints
 - model-order selection for MUSIC
-- planar adaptive steering helpers
 - true-time-delay wideband beamforming
 - calibration and array-error estimation utilities

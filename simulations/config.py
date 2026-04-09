@@ -18,13 +18,22 @@ class SourceConfig:
 class ArrayConfig:
     geometry: str
     num_elements: int
-    spacing_lambda: float
+    spacing_lambda: float | None = None
+    num_x: int | None = None
+    num_y: int | None = None
+    spacing_x_lambda: float | None = None
+    spacing_y_lambda: float | None = None
 
 
 @dataclass(frozen=True)
 class AlgorithmConfig:
     name: str
     diagonal_loading: float
+    step_size: float
+    leakage: float
+    epsilon: float
+    forgetting_factor: float
+    initialization_delta: float
 
 
 @dataclass(frozen=True)
@@ -71,6 +80,45 @@ def _parse_source(data: dict[str, Any], context: str) -> SourceConfig:
     )
 
 
+def _parse_array_config(array_data: dict[str, Any]) -> ArrayConfig:
+    _require_keys(array_data, ("geometry",), "array")
+    geometry = str(array_data["geometry"]).lower()
+    if geometry == "ula":
+        _require_keys(array_data, ("num_elements", "spacing_lambda"), "array")
+        num_elements = int(array_data["num_elements"])
+        spacing_lambda = float(array_data["spacing_lambda"])
+        if num_elements < 1:
+            raise ValueError("array.num_elements must be >= 1")
+        if spacing_lambda <= 0.0:
+            raise ValueError("array.spacing_lambda must be > 0")
+        return ArrayConfig(
+            geometry="ula",
+            num_elements=num_elements,
+            spacing_lambda=spacing_lambda,
+        )
+
+    if geometry in {"planar", "upa"}:
+        _require_keys(array_data, ("num_x", "num_y", "spacing_x_lambda", "spacing_y_lambda"), "array")
+        num_x = int(array_data["num_x"])
+        num_y = int(array_data["num_y"])
+        spacing_x_lambda = float(array_data["spacing_x_lambda"])
+        spacing_y_lambda = float(array_data["spacing_y_lambda"])
+        if num_x < 1 or num_y < 1:
+            raise ValueError("array.num_x and array.num_y must be >= 1")
+        if spacing_x_lambda <= 0.0 or spacing_y_lambda <= 0.0:
+            raise ValueError("array planar spacings must be > 0")
+        return ArrayConfig(
+            geometry="planar",
+            num_elements=num_x * num_y,
+            num_x=num_x,
+            num_y=num_y,
+            spacing_x_lambda=spacing_x_lambda,
+            spacing_y_lambda=spacing_y_lambda,
+        )
+
+    raise ValueError("array.geometry must be one of: ula, planar, upa")
+
+
 def load_scenario_config(path: str | Path) -> ScenarioConfig:
     source = Path(path)
     if not source.exists():
@@ -86,17 +134,13 @@ def load_scenario_config(path: str | Path) -> ScenarioConfig:
         "scenario",
     )
 
-    array_data = payload["array"]
-    _require_keys(array_data, ("geometry", "num_elements", "spacing_lambda"), "array")
-    geometry = str(array_data["geometry"]).lower()
-    if geometry != "ula":
-        raise ValueError("Only 'ula' geometry is supported in the current simulation runner")
+    array = _parse_array_config(payload["array"])
 
     algorithm_data = payload["algorithm"]
     _require_keys(algorithm_data, ("name",), "algorithm")
     algorithm_name = str(algorithm_data["name"]).lower()
-    if algorithm_name not in {"conventional", "mvdr"}:
-        raise ValueError("algorithm.name must be one of: conventional, mvdr")
+    if algorithm_name not in {"conventional", "mvdr", "lms", "nlms", "rls"}:
+        raise ValueError("algorithm.name must be one of: conventional, mvdr, lms, nlms, rls")
 
     sweep_data = payload["sweep"]
     _require_keys(
@@ -116,11 +160,7 @@ def load_scenario_config(path: str | Path) -> ScenarioConfig:
         name=str(payload["name"]),
         seed=int(payload["seed"]),
         snapshots=int(payload["snapshots"]),
-        array=ArrayConfig(
-            geometry=geometry,
-            num_elements=int(array_data["num_elements"]),
-            spacing_lambda=float(array_data["spacing_lambda"]),
-        ),
+        array=array,
         desired_source=_parse_source(payload["desired_source"], "desired_source"),
         interference_sources=tuple(
             _parse_source(item, f"interference_sources[{idx}]") for idx, item in enumerate(interference)
@@ -128,6 +168,11 @@ def load_scenario_config(path: str | Path) -> ScenarioConfig:
         algorithm=AlgorithmConfig(
             name=algorithm_name,
             diagonal_loading=float(algorithm_data.get("diagonal_loading", 1e-3)),
+            step_size=float(algorithm_data.get("step_size", 0.05)),
+            leakage=float(algorithm_data.get("leakage", 0.0)),
+            epsilon=float(algorithm_data.get("epsilon", 1e-6)),
+            forgetting_factor=float(algorithm_data.get("forgetting_factor", 0.995)),
+            initialization_delta=float(algorithm_data.get("initialization_delta", 1.0)),
         ),
         sweep=SweepConfig(
             theta_start_deg=float(sweep_data["theta_start_deg"]),
@@ -143,13 +188,21 @@ def load_scenario_config(path: str | Path) -> ScenarioConfig:
         ),
     )
 
-    if config.array.num_elements < 1:
-        raise ValueError("array.num_elements must be >= 1")
-    if config.array.spacing_lambda <= 0.0:
-        raise ValueError("array.spacing_lambda must be > 0")
     if config.snapshots < 2:
         raise ValueError("snapshots must be >= 2")
     if config.sweep.theta_num < 2 or config.sweep.phi_num < 2:
         raise ValueError("sweep.theta_num and sweep.phi_num must be >= 2")
+    if config.algorithm.diagonal_loading < 0.0:
+        raise ValueError("algorithm.diagonal_loading must be >= 0")
+    if config.algorithm.step_size <= 0.0:
+        raise ValueError("algorithm.step_size must be > 0")
+    if config.algorithm.leakage < 0.0:
+        raise ValueError("algorithm.leakage must be >= 0")
+    if config.algorithm.epsilon <= 0.0:
+        raise ValueError("algorithm.epsilon must be > 0")
+    if not (0.0 < config.algorithm.forgetting_factor <= 1.0):
+        raise ValueError("algorithm.forgetting_factor must be in (0, 1]")
+    if config.algorithm.initialization_delta <= 0.0:
+        raise ValueError("algorithm.initialization_delta must be > 0")
 
     return config

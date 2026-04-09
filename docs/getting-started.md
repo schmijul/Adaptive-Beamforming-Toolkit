@@ -76,14 +76,15 @@ abf simulate --config config/default.yaml
 This produces a JSON artifact in the configured output directory. For repeated trials:
 
 ```bash
-abf montecarlo --config config/default.yaml --runs 50
+abf montecarlo --config config/default.yaml --runs 50 --jobs 4
 ```
 
 The current runner supports:
 
-- `ula` geometry
-- `conventional` and `mvdr` weight selection
+- `ula` and `planar` geometry
+- `conventional`, `mvdr`, `lms`, `nlms`, and `rls` weight selection
 - one desired source plus zero or more interferers
+- threaded Monte Carlo execution through `--jobs`
 - optional HTML plot export
 
 ## 4. Check the Reference Tests
@@ -115,5 +116,11 @@ These examples are intended as the shortest external-user workflows that stay al
 ## 6. Know the Current Scope
 
 This toolkit is strongest as a simulation and algorithm-exploration environment. The current repository is not a full phased-array hardware stack, a calibrated measurement framework, or a large-scale production beamforming library.
+
+Keep these concrete limits in mind:
+
+- adaptive processing still uses narrowband or per-frequency-bin models rather than true time-delay wideband beamforming
+- MIMO and polarimetric support currently lives in the Python API helpers, not the CLI
+- the codebase targets offline research workflows rather than real-time embedded use
 
 For the mathematical background behind the code, continue with [Theory](theory.md) and [Signal Model](signal-model.md).

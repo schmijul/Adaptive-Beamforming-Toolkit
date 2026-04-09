@@ -22,9 +22,17 @@ The current repository includes:
 - Near-field focusing and far-field plane-wave modes.
 - Wideband beam-squint analysis with fixed phase-shifter weights.
 - Simplified element-pattern and mutual-coupling impairments.
-- MVDR/Capon beamforming and MUSIC direction-of-arrival estimation.
+- MVDR/Capon, LMS, NLMS, and RLS beamforming plus MUSIC direction-of-arrival estimation.
+- Frequency-domain wideband MVDR helpers and MIMO/polarimetric simulation utilities.
 - IQ snapshot simulation, loading, beamforming, and comparison metrics.
 - A Dash dashboard plus a CLI for reproducible simulation runs.
+
+## Important Boundaries
+
+- The adaptive stack is still built around narrowband or per-frequency-bin models rather than true time-delay wideband processing.
+- The CLI and YAML runner support ULA and planar arrays, but MIMO/polarimetric workflows remain Python-API-only.
+- The dashboard is intentionally smaller in scope than the Python API and simulation runner.
+- Execution targets research and teaching workflows, not hard real-time embedded operation.
 
 ## Documentation Conventions
 

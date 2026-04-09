@@ -9,13 +9,21 @@ Adaptive Beamforming Toolkit is a research-oriented Python package for array-fac
 - near-field focusing and far-field pattern evaluation
 - wideband beam-squint analysis for phase-steered arrays
 - simplified element-pattern and mutual-coupling impairment modeling
-- MVDR/Capon beamforming and MUSIC direction finding
+- MVDR/Capon, LMS, NLMS, and RLS beamforming plus MUSIC direction finding
+- frequency-domain wideband MVDR helpers and MIMO/polarimetric snapshot synthesis
 - IQ loading, synthesis, beamforming, and simulation-vs-measurement metrics
 - config-driven simulation runs and optional Plotly HTML outputs
 
 ## Project Status
 
 The codebase is functional and test-backed, but it is best treated as a compact simulation and exploration toolkit, not as a hardened production beamforming stack.
+
+## Current Limitations
+
+- adaptive processing is still built around narrowband or per-frequency-bin models; there is no true time-delay or STAP-style wideband beamforming path
+- MIMO and polarimetric support currently lives in the Python API helpers rather than the CLI or dashboard
+- the interactive dashboard remains a compact exploration UI rather than a full multi-geometry control surface
+- the toolkit is still research-oriented software, not a hard real-time embedded beamforming stack
 
 ## Documentation Map
 
@@ -90,16 +98,16 @@ The installed CLI entry point is `abf`.
 ```bash
 abf dashboard
 abf simulate --config config/default.yaml
-abf montecarlo --config config/default.yaml --runs 50
+abf montecarlo --config config/default.yaml --runs 50 --jobs 4
 abf gallery --config config/default.yaml
 ```
 
 Current runner scope:
 
-- array geometry: `ula`
-- algorithms: `conventional`, `mvdr`
+- array geometry: `ula`, `planar`
+- algorithms: `conventional`, `mvdr`, `lms`, `nlms`, `rls`
 
-The broader Python API includes planar arrays, null steering, impairment models, near-field helpers, and MUSIC utilities beyond the current YAML runner surface.
+The broader Python API also includes wideband MVDR helpers plus MIMO and polarimetric snapshot utilities beyond the current YAML runner surface.
 
 ## Python Example
 
