@@ -23,7 +23,7 @@ def main() -> None:
         temp_config.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
 
         completed = subprocess.run(
-            [sys.executable, "-m", "abf_cli", "simulate", "--config", str(temp_config)],
+            [sys.executable, "-m", "abf", "simulate", "--config", str(temp_config)],
             cwd=root,
             check=True,
             capture_output=True,

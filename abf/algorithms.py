@@ -1,6 +1,6 @@
 """Stable public re-export of adaptive algorithms."""
 
-from algorithms import (
+from algorithms.adaptive import (
     beamform_frequency_snapshots,
     doa_music_linear,
     estimate_covariance_matrix,

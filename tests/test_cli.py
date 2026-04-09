@@ -16,7 +16,7 @@ def test_cli_simulate_returns_json_and_writes_output(tmp_path) -> None:
     config_path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
 
     completed = subprocess.run(
-        [sys.executable, "-m", "abf_cli", "simulate", "--config", str(config_path)],
+        [sys.executable, "-m", "abf", "simulate", "--config", str(config_path)],
         check=True,
         capture_output=True,
         text=True,
@@ -53,7 +53,7 @@ def test_cli_rejects_invalid_config(tmp_path) -> None:
     config_path.write_text(yaml.safe_dump(invalid_payload, sort_keys=False), encoding="utf-8")
 
     completed = subprocess.run(
-        [sys.executable, "-m", "abf_cli", "simulate", "--config", str(config_path)],
+        [sys.executable, "-m", "abf", "simulate", "--config", str(config_path)],
         capture_output=True,
         text=True,
     )
@@ -78,7 +78,7 @@ def test_cli_supports_planar_scenario(tmp_path) -> None:
     config_path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
 
     completed = subprocess.run(
-        [sys.executable, "-m", "abf_cli", "simulate", "--config", str(config_path)],
+        [sys.executable, "-m", "abf", "simulate", "--config", str(config_path)],
         check=True,
         capture_output=True,
         text=True,

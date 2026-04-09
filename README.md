@@ -61,9 +61,17 @@ imgs/         figures used by the docs
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-pip install -r requirements.txt
 pip install -e .
 ```
+
+Install optional extras as needed:
+
+```bash
+pip install -e ".[ui]"
+pip install -e ".[dev]"
+```
+
+`requirements.txt` remains available as a convenience for a full local dev environment.
 
 Requirements:
 
@@ -77,6 +85,12 @@ Launch the dashboard:
 
 ```bash
 abf dashboard
+```
+
+You can also invoke the package entrypoint directly:
+
+```bash
+python -m abf simulate --config config/default.yaml
 ```
 
 Run one config-driven simulation:
@@ -148,6 +162,7 @@ External code should prefer the `abf.*` namespace:
 - `abf.visualize`
 
 The older package roots remain importable for compatibility, but they are no longer the recommended public interface.
+Those legacy roots are deprecated and scheduled for removal in the next release.
 
 Runnable examples are included in `examples/`:
 

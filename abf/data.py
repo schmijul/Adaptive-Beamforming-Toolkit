@@ -1,6 +1,6 @@
 """Stable public re-export of IQ data helpers."""
 
-from data import (
+from data.iq import (
     beamform_iq,
     compare_sim_vs_measurement,
     load_iq_samples,

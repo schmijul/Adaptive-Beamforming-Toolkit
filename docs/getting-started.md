@@ -7,7 +7,7 @@ This page is the shortest path from a fresh clone to useful output.
 Run either of the following:
 
 ```bash
-python app.py
+python -m abf dashboard
 ```
 
 ```bash

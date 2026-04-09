@@ -12,7 +12,8 @@ External users should prefer the `abf.*` namespace:
 - `abf.simulations`
 - `abf.visualize`
 
-The legacy roots `core`, `algorithms`, `data`, and `simulations` remain available for compatibility with older code and internal tests.
+The legacy roots `core`, `algorithms`, `data`, `simulations`, and `visualize` remain available for compatibility with older code and internal tests.
+Those legacy roots are deprecated and scheduled for removal in the next release.
 
 ## `abf.core`
 
@@ -168,7 +169,7 @@ These functions build the Plotly figures used by the dashboard and optional simu
 
 ## CLI Entry Point
 
-The console script `abf` is defined in `pyproject.toml` and implemented in `abf_cli.py`.
+The console script `abf` is defined in `pyproject.toml` and implemented in `abf/cli.py`.
 
 Supported subcommands:
 

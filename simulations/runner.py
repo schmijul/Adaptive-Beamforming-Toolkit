@@ -17,7 +17,8 @@ from algorithms.adaptive import (
     planar_steering_vector,
     rls_weights,
 )
-from core import array_factor_linear_from_weights, array_factor_planar_from_weights
+from core.advanced_models import array_factor_planar_from_weights
+from core.beamforming import array_factor_linear_from_weights
 from data.iq import simulate_array_iq_components
 from simulations.config import ScenarioConfig
 from visualize.plots import build_elevation_cut, build_heatmap, build_pattern_3d, build_weights_plot

@@ -37,7 +37,7 @@ python examples/reproducible_cli_scenario.py
 This shows:
 
 - cloning `config/default.yaml` into a temporary scenario
-- running `python -m abf_cli simulate`
+- running `python -m abf simulate`
 - loading the resulting `simulate.json` artifact
 
 ## Dashboard
@@ -45,7 +45,7 @@ This shows:
 Run the interactive UI:
 
 ```bash
-python app.py
+python -m abf dashboard
 ```
 
 or

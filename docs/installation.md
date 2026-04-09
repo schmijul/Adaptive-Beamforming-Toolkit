@@ -16,9 +16,17 @@ Typical Linux and macOS setups work as long as the compiler can build the `core.
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-pip install -r requirements.txt
 pip install -e .
 ```
+
+Install optional extras only when needed:
+
+```bash
+pip install -e ".[ui]"
+pip install -e ".[dev]"
+```
+
+`requirements.txt` remains available as a convenience for a full local development environment.
 
 Why editable mode:
 
@@ -45,7 +53,7 @@ pytest -q
 Run the dashboard directly:
 
 ```bash
-python app.py
+python -m abf dashboard
 ```
 
 Or use the installed CLI:

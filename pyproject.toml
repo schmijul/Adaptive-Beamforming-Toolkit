@@ -23,11 +23,18 @@ classifiers = [
   "Topic :: Scientific/Engineering",
 ]
 dependencies = [
-  "dash>=2.18",
   "numpy>=1.26",
-  "plotly>=5.24",
   "scipy>=1.13",
   "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+ui = [
+  "dash>=2.18",
+  "plotly>=5.24",
+]
+dev = [
+  "pytest>=8.3",
 ]
 
 [project.urls]
@@ -36,11 +43,10 @@ Source = "https://github.com/schmijul/Adaptive-Beamforming-Toolkit"
 Issues = "https://github.com/schmijul/Adaptive-Beamforming-Toolkit/issues"
 
 [project.scripts]
-abf = "abf_cli:main"
+abf = "abf.cli:main"
 
 [tool.setuptools]
 include-package-data = true
-py-modules = ["abf_cli"]
 
 [tool.setuptools.packages.find]
-include = ["abf", "algorithms", "core", "data", "simulations", "ui", "visualize"]
+include = ["abf", "abf.*", "algorithms", "core", "data", "simulations", "ui", "visualize"]
