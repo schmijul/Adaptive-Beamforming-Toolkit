@@ -28,3 +28,18 @@ def test_adaptive_mvdr_music_example_runs() -> None:
 def test_reproducible_cli_scenario_example_runs() -> None:
     output = _run_example("examples/reproducible_cli_scenario.py")
     assert "CLI mode: single" in output
+
+
+def test_ml_dataset_generation_example_runs() -> None:
+    output = _run_example("examples/ml_dataset_generation.py")
+    assert "n_samples" in output
+
+
+def test_ml_supervised_doa_example_runs() -> None:
+    output = _run_example("examples/ml_supervised_doa.py")
+    assert "mae" in output
+
+
+def test_ml_env_step_example_runs() -> None:
+    output = _run_example("examples/ml_env_step.py")
+    assert "reset" in output

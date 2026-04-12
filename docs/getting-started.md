@@ -124,3 +124,23 @@ Keep these concrete limits in mind:
 - the codebase targets offline research workflows rather than real-time embedded use
 
 For the mathematical background behind the code, continue with [Theory](theory.md) and [Signal Model](signal-model.md).
+
+## 7. Run the ML Layer
+
+Generate a simulator-backed dataset:
+
+```bash
+abf dataset --config config/ml/doa_regression.yaml
+```
+
+Run a supervised experiment:
+
+```bash
+abf train --config config/ml/doa_regression.yaml
+```
+
+Step through the environment wrapper:
+
+```bash
+abf env-demo --config config/rl/beam_selection.yaml --steps 3
+```

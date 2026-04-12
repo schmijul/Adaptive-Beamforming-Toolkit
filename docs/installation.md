@@ -23,6 +23,9 @@ Install optional extras only when needed:
 
 ```bash
 pip install -e ".[ui]"
+pip install -e ".[ml]"
+pip install -e ".[torch]"
+pip install -e ".[rl]"
 pip install -e ".[dev]"
 ```
 
@@ -39,6 +42,7 @@ Why editable mode:
 An editable install exposes:
 
 - the Python packages in `core/`, `algorithms/`, `data/`, `visualize/`, `simulations/`, and `ui/`
+- the `abf.ml` experimentation layer inside the `abf` package
 - the console script `abf`
 - the compiled extension module `core._beamforming_cpp`
 

@@ -9,6 +9,7 @@ External users should prefer the `abf.*` namespace:
 - `abf.core`
 - `abf.algorithms`
 - `abf.data`
+- `abf.ml`
 - `abf.simulations`
 - `abf.visualize`
 
@@ -153,6 +154,28 @@ Common top-level return keys:
 - `run_single_simulation(...)`: `mode`, `created_at_utc`, `config`, `result`
 - `run_monte_carlo(...)`: `mode`, `created_at_utc`, `config`, `summary`, `runs`
 
+## `abf.ml`
+
+This module adds a thin experimentation layer on top of the simulator and classical beamforming utilities.
+
+- `load_experiment_config(path)`
+  Parses an ML experiment YAML config.
+- `generate_dataset(config, ...)`
+  Generates an `MLDataset` with `X`, `y`, metadata, and split indices.
+- `save_dataset(dataset, path)`
+  Saves dataset arrays and metadata to `.npz`.
+- `load_dataset(path)`
+  Loads a previously saved dataset artifact.
+- `run_experiment(config)`
+  Runs dataset generation, fitting, evaluation, baseline comparison, and artifact export.
+- `evaluate_model(model, dataset, ...)`
+  Evaluates metrics and configured baselines on a chosen split.
+
+### `abf.ml.envs`
+
+- `BeamSelectionEnv(config, seed=None)`
+  Simulator-backed environment for beam-selection decision experiments.
+
 ## `abf.visualize`
 
 These functions build the Plotly figures used by the dashboard and optional simulation outputs.
@@ -177,3 +200,7 @@ Supported subcommands:
 - `abf simulate --config <path>`
 - `abf montecarlo --config <path> --runs <n> --jobs <m>`
 - `abf gallery --config <path>`
+- `abf dataset --config <path>`
+- `abf train --config <path>`
+- `abf evaluate --config <path>`
+- `abf env-demo --config <path> --steps <n>`

@@ -40,6 +40,18 @@ This shows:
 - running `python -m abf simulate`
 - loading the resulting `simulate.json` artifact
 
+### ML scripts
+
+```bash
+python examples/ml_dataset_generation.py
+python examples/ml_supervised_doa.py
+python examples/ml_beam_selection.py
+python examples/ml_env_step.py
+python examples/ml_cli_workflow.py
+```
+
+These cover dataset generation, supervised training, beam-selection classification, environment stepping, and CLI-driven experiment execution.
+
 ## Dashboard
 
 Run the interactive UI:

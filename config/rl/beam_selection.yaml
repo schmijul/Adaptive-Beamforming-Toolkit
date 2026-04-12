@@ -1,0 +1,71 @@
+experiment:
+  name: beam_selection_env
+
+task:
+  name: beam_selection
+  params:
+    beam_angles_deg: [-60, -30, 0, 30, 60]
+
+dataset:
+  n_samples: 32
+  seed: 11
+  feature_type: covariance_real_imag
+  target_type: beam_selection
+  sampling:
+    desired_theta_deg:
+      min: -60.0
+      max: 60.0
+    interference_count: [0, 2]
+    interference_theta_deg:
+      min: -75.0
+      max: 75.0
+    interference_snr_db:
+      min: 0.0
+      max: 15.0
+
+split:
+  train: 0.7
+  val: 0.15
+  test: 0.15
+
+model:
+  family: numpy
+  name: nearest_centroid
+
+output:
+  dir: outputs/rl/beam_selection_env
+  save_dataset: false
+  save_model: false
+
+env:
+  feature_type: covariance_real_imag
+  beam_angles_deg: [-60, -30, 0, 30, 60]
+  reward_mode: gain
+  episode_length: 1
+
+scenario:
+  name: beam_selection_env_scenario
+  seed: 11
+  snapshots: 256
+  array:
+    geometry: ula
+    num_elements: 8
+    spacing_lambda: 0.5
+  desired_source:
+    theta_deg: 0.0
+    phi_deg: 0.0
+    snr_db: 10.0
+  interference_sources: []
+  algorithm:
+    name: mvdr
+    diagonal_loading: 0.001
+  sweep:
+    theta_start_deg: -90.0
+    theta_stop_deg: 90.0
+    theta_num: 181
+    phi_start_deg: -5.0
+    phi_stop_deg: 5.0
+    phi_num: 3
+  output:
+    directory: outputs/rl-beam-selection-sim
+    save_plots: false

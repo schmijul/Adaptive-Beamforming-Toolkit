@@ -10,6 +10,11 @@ The Adaptive Beamforming Toolkit combines a C++ array-factor core with Python he
 - [Signal Model](signal-model.md): snapshot model, steering vectors, covariance estimation, and notation.
 - [Algorithms](algorithms.md): implemented beamforming and DoA methods, with formulas and interpretation.
 - [Examples](examples.md): runnable CLI and Python examples built from the current codebase.
+- [ML Overview](ml-overview.md): the added `abf.ml` experimentation layer.
+- [ML Datasets](ml-datasets.md): simulator-backed dataset generation and serialization.
+- [ML Supervised](ml-supervised.md): train/evaluate workflows and result artifacts.
+- [ML Environments](ml-environments.md): the beam-selection environment wrapper.
+- [ML Configs](ml-configs.md): YAML structure for dataset, training, and environment workflows.
 - [API Reference](api-reference.md): module-by-module description of public entry points.
 - [Notes](NOTES.md): current scope, simplifications, and known boundaries of the toolkit.
 
@@ -26,6 +31,7 @@ The current repository includes:
 - Frequency-domain wideband MVDR helpers and MIMO/polarimetric simulation utilities.
 - IQ snapshot simulation, loading, beamforming, and comparison metrics.
 - A Dash dashboard plus a CLI for reproducible simulation runs.
+- An `abf.ml` layer for dataset generation, supervised experiments, and environment-style interaction.
 
 ## Important Boundaries
 

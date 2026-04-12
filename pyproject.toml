@@ -29,6 +29,15 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+ml = [
+  "scikit-learn>=1.5",
+]
+torch = [
+  "torch>=2.3",
+]
+rl = [
+  "gymnasium>=0.29",
+]
 ui = [
   "dash>=2.18",
   "plotly>=5.24",

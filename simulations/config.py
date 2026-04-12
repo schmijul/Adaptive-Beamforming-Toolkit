@@ -119,12 +119,7 @@ def _parse_array_config(array_data: dict[str, Any]) -> ArrayConfig:
     raise ValueError("array.geometry must be one of: ula, planar, upa")
 
 
-def load_scenario_config(path: str | Path) -> ScenarioConfig:
-    source = Path(path)
-    if not source.exists():
-        raise ValueError(f"Config file does not exist: {source}")
-
-    payload = yaml.safe_load(source.read_text(encoding="utf-8"))
+def parse_scenario_config(payload: dict[str, Any]) -> ScenarioConfig:
     if not isinstance(payload, dict):
         raise ValueError("Config file must contain a top-level mapping")
 
@@ -206,3 +201,12 @@ def load_scenario_config(path: str | Path) -> ScenarioConfig:
         raise ValueError("algorithm.initialization_delta must be > 0")
 
     return config
+
+
+def load_scenario_config(path: str | Path) -> ScenarioConfig:
+    source = Path(path)
+    if not source.exists():
+        raise ValueError(f"Config file does not exist: {source}")
+
+    payload = yaml.safe_load(source.read_text(encoding="utf-8"))
+    return parse_scenario_config(payload)

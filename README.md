@@ -2,6 +2,8 @@
 
 Adaptive Beamforming Toolkit is a research-oriented Python package for array-factor simulation, adaptive beamforming experiments, IQ snapshot generation, and interactive visualization. The repository combines a C++ compute core with a stable `abf.*` Python API, a small CLI, and a Dash dashboard.
 
+The current revision also adds a thin `abf.ml` layer for simulator-backed dataset generation, supervised experiment scaffolding, baseline comparison, and lightweight environment-style interaction.
+
 ## What You Get
 
 - fast ULA and planar array-factor evaluation through `core._beamforming_cpp`
@@ -13,6 +15,7 @@ Adaptive Beamforming Toolkit is a research-oriented Python package for array-fac
 - frequency-domain wideband MVDR helpers and MIMO/polarimetric snapshot synthesis
 - IQ loading, synthesis, beamforming, and simulation-vs-measurement metrics
 - config-driven simulation runs and optional Plotly HTML outputs
+- simulator-backed ML datasets, experiment runners, and environment wrappers
 
 ## Project Status
 
@@ -36,6 +39,11 @@ The full documentation lives in [`docs/`](docs/):
 - [`docs/signal-model.md`](docs/signal-model.md): notation, steering vectors, and covariance model
 - [`docs/algorithms.md`](docs/algorithms.md): implemented methods with formulas and interpretation
 - [`docs/examples.md`](docs/examples.md): executable examples based on current code
+- [`docs/ml-overview.md`](docs/ml-overview.md): ML architecture and quickstart
+- [`docs/ml-datasets.md`](docs/ml-datasets.md): dataset generation and serialization
+- [`docs/ml-supervised.md`](docs/ml-supervised.md): supervised training and evaluation
+- [`docs/ml-environments.md`](docs/ml-environments.md): environment wrapper usage
+- [`docs/ml-configs.md`](docs/ml-configs.md): ML YAML config structure
 - [`docs/api-reference.md`](docs/api-reference.md): module-level API overview
 
 ## Repository Structure
@@ -68,6 +76,9 @@ Install optional extras as needed:
 
 ```bash
 pip install -e ".[ui]"
+pip install -e ".[ml]"
+pip install -e ".[torch]"
+pip install -e ".[rl]"
 pip install -e ".[dev]"
 ```
 
@@ -114,6 +125,10 @@ abf dashboard
 abf simulate --config config/default.yaml
 abf montecarlo --config config/default.yaml --runs 50 --jobs 4
 abf gallery --config config/default.yaml
+abf dataset --config config/ml/doa_regression.yaml
+abf train --config config/ml/doa_regression.yaml
+abf evaluate --config config/ml/doa_regression.yaml
+abf env-demo --config config/rl/beam_selection.yaml --steps 3
 ```
 
 Current runner scope:
@@ -158,6 +173,7 @@ External code should prefer the `abf.*` namespace:
 - `abf.core`
 - `abf.algorithms`
 - `abf.data`
+- `abf.ml`
 - `abf.simulations`
 - `abf.visualize`
 
@@ -169,6 +185,11 @@ Runnable examples are included in `examples/`:
 - `python examples/linear_array_pattern.py`
 - `python examples/adaptive_mvdr_music.py`
 - `python examples/reproducible_cli_scenario.py`
+- `python examples/ml_dataset_generation.py`
+- `python examples/ml_supervised_doa.py`
+- `python examples/ml_beam_selection.py`
+- `python examples/ml_env_step.py`
+- `python examples/ml_cli_workflow.py`
 
 ## Dashboard Preview
 

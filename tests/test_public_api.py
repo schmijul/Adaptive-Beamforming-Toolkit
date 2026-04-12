@@ -13,6 +13,7 @@ def test_abf_namespace_exposes_supported_modules() -> None:
     assert abf.core is not None
     assert abf.algorithms is not None
     assert abf.data is not None
+    assert abf.ml is not None
     assert abf.simulations is not None
     assert abf.visualize is not None
 
