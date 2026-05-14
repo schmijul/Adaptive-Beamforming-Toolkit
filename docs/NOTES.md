@@ -7,7 +7,7 @@ The repository is intentionally focused on compact, test-backed beamforming work
 - ideal ULA and planar-array factors
 - deterministic steering and null steering
 - selected advanced models for near-field, wideband, and impairments
-- covariance-based MVDR, LMS, NLMS, RLS, and MUSIC utilities
+- covariance-based MVDR, LMS, NLMS, RLS, MUSIC, and fixed-order sparse OMP workflows
 - lightweight IQ simulation plus planar, MIMO, and polarimetric helpers
 - a dashboard and config-driven CLI
 
@@ -16,10 +16,10 @@ The repository is intentionally focused on compact, test-backed beamforming work
 Several models are deliberately simplified for clarity and speed:
 
 - the adaptive routines are still based on narrowband or per-frequency-bin models
-- wideband support includes subband MVDR helpers, but not true time-delay beamforming or STAP
-- the impairment model is first-order and not a full calibration framework
+- wideband support includes true-time-delay response evaluation and subband MVDR helpers, but not STAP
+- calibration helpers estimate relative element response errors, but they are not a full measurement campaign framework
 - the simulation runner currently supports `ula` and `planar` geometries
-- the simulation runner currently supports `conventional`, `mvdr`, `lms`, `nlms`, and `rls`
+- the simulation runner supports MUSIC and sparse OMP for ULA direction finding, but not planar DoA scans
 - MIMO and polarimetric workflows are Python-API helpers rather than first-class CLI modes
 
 ## What The Toolkit Is Good For
@@ -45,7 +45,5 @@ The current codebase should not be mistaken for:
 
 If the toolkit grows further, the next technically coherent additions would be:
 
-- general LCMV constraints
-- model-order selection for MUSIC
-- true-time-delay wideband beamforming
-- calibration and array-error estimation utilities
+- STAP-style wideband adaptive processing
+- richer calibration workflows for measured arrays

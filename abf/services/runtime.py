@@ -25,7 +25,27 @@ def run_dashboard(*, host: str, port: int, debug: bool) -> None:
 def run_simulate_command(config_path: str) -> Mapping[str, object]:
     config = load_scenario_config(config_path)
     payload = run_single_simulation(config)
-    return {"mode": payload["mode"], "out_dir": config.output.directory}
+    result = payload["result"]
+    summary: dict[str, object] = {
+        "mode": payload["mode"],
+        "algorithm": config.algorithm.name,
+        "out_dir": config.output.directory,
+        "result_path": f"{config.output.directory}/simulate.json",
+    }
+    if "estimated_thetas_deg" in result:
+        summary["estimated_thetas_deg"] = result["estimated_thetas_deg"]
+    if "sinr_db" in result:
+        summary["sinr_db"] = result["sinr_db"]
+    if "support_indices" in result:
+        summary["support_indices"] = result["support_indices"]
+    if "source_power" in result:
+        summary["source_power"] = result["source_power"]
+    if config.output.save_plots:
+        if "music_spectrum_db" in result:
+            summary["plot_path"] = f"{config.output.directory}/music_spectrum.html"
+        if "sparse_spectrum_db" in result:
+            summary["plot_path"] = f"{config.output.directory}/sparse_spectrum.html"
+    return summary
 
 
 def run_montecarlo_command(config_path: str, *, runs: int, jobs: int) -> Mapping[str, object]:

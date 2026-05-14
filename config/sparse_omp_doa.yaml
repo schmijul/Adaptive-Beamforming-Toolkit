@@ -1,0 +1,31 @@
+name: sparse_omp_doa
+seed: 7
+snapshots: 2048
+
+array:
+  geometry: ula
+  num_elements: 12
+  spacing_lambda: 0.5
+
+desired_source:
+  theta_deg: 25.0
+  phi_deg: 0.0
+  snr_db: 20.0
+
+interference_sources: []
+
+algorithm:
+  name: sparse_omp
+  num_sources: 1
+
+sweep:
+  theta_start_deg: 0.0
+  theta_stop_deg: 90.0
+  theta_num: 361
+  phi_start_deg: 0.0
+  phi_stop_deg: 0.0
+  phi_num: 2
+
+output:
+  directory: outputs/sparse_omp_doa
+  save_plots: true

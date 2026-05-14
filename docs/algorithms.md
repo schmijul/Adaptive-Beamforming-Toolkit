@@ -114,9 +114,11 @@ P_{MUSIC}(\theta,\phi) =
 ```
 
 The code computes this over a scan grid and returns the largest peaks.
+When the source count is unknown, `estimate_music_model_order(...)` evaluates AIC or MDL over candidate source counts, and `doa_music_linear(..., num_sources="mdl")` can use that estimate before computing the pseudospectrum.
 
 Implemented entry points:
 
+- `algorithms.adaptive.estimate_music_model_order(...)`
 - `algorithms.adaptive.music_spectrum(...)`
 - `algorithms.adaptive.doa_music_linear(...)`
 
@@ -126,9 +128,35 @@ Reference figure:
 
 Important boundary:
 
-- the current helper requires the number of sources as an input parameter; it does not estimate model order
+- AIC/MDL model-order selection assumes the sample covariance has a clear signal/noise eigenvalue separation.
 
-## 5. Near-Field Focusing
+## 5. Sparse OMP DoA Estimation
+
+Sparse OMP treats direction finding as a grid-based sparse recovery problem. The runner builds a ULA steering dictionary over `theta_scan_deg`, then repeatedly selects the grid column that best explains the current residual snapshots. After `num_sources` selections, it solves a least-squares fit over the selected support.
+
+Use it from the CLI with:
+
+```bash
+abf simulate --config config/sparse_omp_doa.yaml
+```
+
+The output artifact contains `theta_scan_deg`, `sparse_spectrum`, `sparse_spectrum_db`, `estimated_thetas_deg`, `support_indices`, `source_power`, `residual_power`, and `num_sources`. When plot output is enabled, inspect `sparse_spectrum.html`.
+
+Implemented entry point:
+
+- `algorithms.adaptive.doa_sparse_omp_linear(...)`
+
+Reference figure:
+
+![Sparse OMP DoA spectrum](../imgs/alg-sparse-omp-spectrum.png)
+
+Important boundaries:
+
+- ULA only in the current runner and public helper
+- grid-based estimates, so off-grid sources are quantized to nearby scan angles
+- fixed source count through `algorithm.num_sources`; there is no automatic sparse model-order selection yet
+
+## 6. Near-Field Focusing
 
 The near-field model replaces the plane-wave approximation with an element-to-focus distance law:
 
@@ -154,7 +182,7 @@ Reference figure:
 
 ![Near-field versus far-field](../imgs/alg-near-vs-far.png)
 
-## 6. Wideband Beam-Squint Analysis
+## 7. Wideband Response Analysis
 
 The wideband helper assumes phase-shifter weights are designed at a center frequency `f_0` and then evaluated at other frequencies. The effective electrical spacing scales as
 
@@ -163,16 +191,18 @@ d_{eff}(f) = d \frac{f}{f_0}
 ```
 
 so the beam direction changes with frequency. This is the classical beam-squint effect of phase-only steering.
+The true-time-delay helper instead scales the compensation phase with each evaluated frequency, so the intended steering direction remains aligned across the frequency grid.
 
-Implemented entry point:
+Implemented entry points:
 
 - `core.advanced_models.wideband_array_factor_linear(...)`
+- `core.advanced_models.true_time_delay_array_factor_linear(...)`
 
 Reference figure:
 
 ![Wideband beam squint](../imgs/alg-wideband-squint.png)
 
-## 7. Element Patterns and Mutual Coupling
+## 8. Element Patterns and Mutual Coupling
 
 The impairment-aware array model modifies the ideal response in two ways:
 
@@ -201,7 +231,7 @@ Reference figure:
 
 ![Impairment-aware pattern](../imgs/alg-impairments.png)
 
-## 8. Digital, Analog, and Hybrid Architectures
+## 9. Digital, Analog, and Hybrid Architectures
 
 The repository also includes a simplified architecture-level mapping from ideal complex weights to three implementation styles:
 
@@ -215,28 +245,30 @@ Implemented entry point:
 
 - `core.advanced_models.synthesize_beamforming_architecture(...)`
 
-## 9. Current Adaptive Scope and Omissions
+## 10. Current Adaptive Scope and Omissions
 
 The repository's adaptive-processing surface now includes:
 
 - conventional steering is available as the deterministic baseline
 - MVDR/Capon for covariance-based adaptive nulling
+- LCMV for multiple linear response constraints, including explicit null constraints
 - LMS, NLMS, and RLS for supervised adaptive weight updates
 - per-frequency-bin wideband MVDR helpers for frequency-domain snapshot data
+- true-time-delay wideband response evaluation for ULA array factors
 - MUSIC is available for DoA estimation, not for adaptive weight synthesis
+- sparse OMP is available for fixed-order ULA DoA estimation on a scan grid
 - simple MIMO and polarimetric helper models in the Python API
 
 The repository does not currently ship dedicated implementations of:
 
 - Frost beamforming
-- a general LCMV solver
-- sparse recovery DoA estimators
-- STAP or true time-delay wideband beamforming
+- sparse recovery DoA estimators beyond fixed-order ULA OMP
+- STAP and full waveform-level wideband adaptive beamforming
 
 Related boundaries:
 
 - MUSIC scanning remains ULA-centric
-- wideband adaptive processing is frequency-domain and per-bin, not a full waveform-preserving time-delay beamformer
+- adaptive wideband processing is frequency-domain and per-bin; true-time-delay support is currently an array-response model, not a full adaptive waveform processor
 - the MIMO and polarimetric paths are compact simulation helpers rather than a complete system model
 
 ## References

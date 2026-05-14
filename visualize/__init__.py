@@ -9,7 +9,9 @@ from . import plots as _plots
 __all__ = [
     "build_elevation_cut",
     "build_heatmap",
+    "build_music_spectrum",
     "build_pattern_3d",
+    "build_sparse_spectrum",
     "build_weights_plot",
 ]
 

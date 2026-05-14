@@ -2,9 +2,36 @@
 
 This page is the shortest path from a fresh clone to useful output.
 
-## 1. Launch the Dashboard
+## 1. Run a Reproducible Simulation
 
-Run either of the following:
+The fastest useful check is a config-driven simulation:
+
+```bash
+abf simulate --config config/default.yaml
+```
+
+Run direction-finding examples with MUSIC and sparse OMP:
+
+```bash
+abf simulate --config config/music_doa.yaml
+abf simulate --config config/sparse_omp_doa.yaml
+```
+
+These commands write `simulate.json` in the configured output directory. MUSIC runs include `estimated_thetas_deg`, `music_spectrum_db`, and optional `music_spectrum.html`; sparse OMP runs include `estimated_thetas_deg`, `sparse_spectrum_db`, `support_indices`, `source_power`, and optional `sparse_spectrum.html`.
+
+For repeated trials:
+
+```bash
+abf montecarlo --config config/default.yaml --runs 50 --jobs 4
+```
+
+## 2. Launch the Optional Dashboard
+
+Install the UI extra, then run either command:
+
+```bash
+pip install -e ".[ui]"
+```
 
 ```bash
 python -m abf dashboard
@@ -28,7 +55,7 @@ The main plots are:
 - a 3D radiation-pattern view
 - amplitude and phase-weight plots
 
-## 2. Call the Python API
+## 3. Call the Python API
 
 The supported public import root is `abf.*`.
 
@@ -65,29 +92,18 @@ Other public modules follow the same namespace pattern:
 - `abf.simulations`
 - `abf.visualize`
 
-## 3. Run a Reproducible Simulation
-
-The repository also supports config-driven runs through the CLI:
-
-```bash
-abf simulate --config config/default.yaml
-```
-
-This produces a JSON artifact in the configured output directory. For repeated trials:
-
-```bash
-abf montecarlo --config config/default.yaml --runs 50 --jobs 4
-```
+## 4. Runner Scope
 
 The current runner supports:
 
 - `ula` and `planar` geometry
-- `conventional`, `mvdr`, `lms`, `nlms`, and `rls` weight selection
+- `conventional`, `mvdr`, `lcmv`, `lms`, `nlms`, and `rls` weight selection
+- `music` and `sparse_omp` direction finding for ULA scenarios
 - one desired source plus zero or more interferers
 - threaded Monte Carlo execution through `--jobs`
 - optional HTML plot export
 
-## 4. Check the Reference Tests
+## 5. Check the Reference Tests
 
 ```bash
 pytest -q
@@ -103,7 +119,7 @@ The tests are not just smoke tests. They check specific beamforming behavior, in
 - MVDR/MUSIC operation on simulated snapshots
 - wideband squint and impairment-aware responses
 
-## 5. Run the Example Scripts
+## 6. Run the Example Scripts
 
 ```bash
 python examples/linear_array_pattern.py
@@ -119,7 +135,7 @@ This toolkit is strongest as a simulation and algorithm-exploration environment.
 
 Keep these concrete limits in mind:
 
-- adaptive processing still uses narrowband or per-frequency-bin models rather than true time-delay wideband beamforming
+- adaptive processing still uses narrowband or per-frequency-bin models; true-time-delay support is currently an array-response model
 - MIMO and polarimetric support currently lives in the Python API helpers, not the CLI
 - the codebase targets offline research workflows rather than real-time embedded use
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+import sys
 from typing import Any
 
 import yaml
@@ -29,6 +30,8 @@ class ArrayConfig:
 class AlgorithmConfig:
     name: str
     diagonal_loading: float
+    num_sources: int
+    model_order: str
     step_size: float
     leakage: float
     epsilon: float
@@ -60,6 +63,7 @@ class ScenarioConfig:
     array: ArrayConfig
     desired_source: SourceConfig
     interference_sources: tuple[SourceConfig, ...]
+    constraint_sources: tuple[SourceConfig, ...]
     algorithm: AlgorithmConfig
     sweep: SweepConfig
     output: OutputConfig
@@ -134,8 +138,8 @@ def parse_scenario_config(payload: dict[str, Any]) -> ScenarioConfig:
     algorithm_data = payload["algorithm"]
     _require_keys(algorithm_data, ("name",), "algorithm")
     algorithm_name = str(algorithm_data["name"]).lower()
-    if algorithm_name not in {"conventional", "mvdr", "lms", "nlms", "rls"}:
-        raise ValueError("algorithm.name must be one of: conventional, mvdr, lms, nlms, rls")
+    if algorithm_name not in {"conventional", "mvdr", "lms", "nlms", "rls", "lcmv", "music", "sparse_omp"}:
+        raise ValueError("algorithm.name must be one of: conventional, mvdr, lcmv, lms, nlms, rls, music, sparse_omp")
 
     sweep_data = payload["sweep"]
     _require_keys(
@@ -150,6 +154,9 @@ def parse_scenario_config(payload: dict[str, Any]) -> ScenarioConfig:
     interference = payload["interference_sources"]
     if not isinstance(interference, list):
         raise ValueError("interference_sources must be a list")
+    constraint_data = payload.get("constraint_sources", [])
+    if not isinstance(constraint_data, list):
+        raise ValueError("constraint_sources must be a list")
 
     config = ScenarioConfig(
         name=str(payload["name"]),
@@ -160,9 +167,14 @@ def parse_scenario_config(payload: dict[str, Any]) -> ScenarioConfig:
         interference_sources=tuple(
             _parse_source(item, f"interference_sources[{idx}]") for idx, item in enumerate(interference)
         ),
+        constraint_sources=tuple(
+            _parse_source(item, f"constraint_sources[{idx}]") for idx, item in enumerate(constraint_data)
+        ),
         algorithm=AlgorithmConfig(
             name=algorithm_name,
             diagonal_loading=float(algorithm_data.get("diagonal_loading", 1e-3)),
+            num_sources=int(algorithm_data.get("num_sources", 1)),
+            model_order=str(algorithm_data.get("model_order", "fixed")).lower(),
             step_size=float(algorithm_data.get("step_size", 0.05)),
             leakage=float(algorithm_data.get("leakage", 0.0)),
             epsilon=float(algorithm_data.get("epsilon", 1e-6)),
@@ -189,6 +201,19 @@ def parse_scenario_config(payload: dict[str, Any]) -> ScenarioConfig:
         raise ValueError("sweep.theta_num and sweep.phi_num must be >= 2")
     if config.algorithm.diagonal_loading < 0.0:
         raise ValueError("algorithm.diagonal_loading must be >= 0")
+    if config.algorithm.num_sources < 1:
+        raise ValueError("algorithm.num_sources must be >= 1")
+    if config.algorithm.model_order not in {"fixed", "aic", "mdl"}:
+        raise ValueError("algorithm.model_order must be one of: fixed, aic, mdl")
+    if config.algorithm.name == "music" and config.algorithm.num_sources >= config.array.num_elements:
+        raise ValueError("algorithm.num_sources must be less than the number of array elements for MUSIC")
+    if config.algorithm.name == "sparse_omp" and config.array.geometry != "ula":
+        raise ValueError("algorithm.name: sparse_omp currently requires array.geometry: ula")
+    if config.algorithm.name == "sparse_omp" and config.algorithm.num_sources > min(
+        config.array.num_elements,
+        config.sweep.theta_num,
+    ):
+        raise ValueError("algorithm.num_sources must be <= min(array.num_elements, sweep.theta_num) for sparse_omp")
     if config.algorithm.step_size <= 0.0:
         raise ValueError("algorithm.step_size must be > 0")
     if config.algorithm.leakage < 0.0:
@@ -206,7 +231,10 @@ def parse_scenario_config(payload: dict[str, Any]) -> ScenarioConfig:
 def load_scenario_config(path: str | Path) -> ScenarioConfig:
     source = Path(path)
     if not source.exists():
-        raise ValueError(f"Config file does not exist: {source}")
+        installed_source = Path(sys.prefix) / source
+        if source.is_absolute() or not installed_source.exists():
+            raise ValueError(f"Config file does not exist: {source}")
+        source = installed_source
 
     payload = yaml.safe_load(source.read_text(encoding="utf-8"))
     return parse_scenario_config(payload)

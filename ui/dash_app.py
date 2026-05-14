@@ -18,18 +18,18 @@ PHI_DEG = np.linspace(-180.0, 180.0, 241)
 
 def create_app() -> Dash:
     app = Dash(__name__)
-    app.title = "Beamforming Simulator"
+    app.title = "Adaptive Beamforming Toolkit"
 
     app.layout = html.Div(
         style={
             "fontFamily": "ui-sans-serif, sans-serif",
             "padding": "24px",
-            "background": "linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%)",
+            "background": "#f8fafc",
             "minHeight": "100vh",
         },
         children=[
             html.H1("Adaptive Beamforming Toolkit"),
-            html.P("MVP: linear array, steering, 2D/3D plots, grating lobe intuition."),
+            html.P("Interactive ULA beam steering, tapering, grating-lobe inspection, and pattern visualization."),
             html.Div(
                 style={
                     "display": "grid",

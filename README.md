@@ -11,9 +11,10 @@ The current revision also adds a thin `abf.ml` layer for simulator-backed datase
 - near-field focusing and far-field pattern evaluation
 - wideband beam-squint analysis for phase-steered arrays
 - simplified element-pattern and mutual-coupling impairment modeling
-- MVDR/Capon, LMS, NLMS, and RLS beamforming plus MUSIC direction finding
-- frequency-domain wideband MVDR helpers and MIMO/polarimetric snapshot synthesis
+- MVDR/Capon, LMS, NLMS, and RLS beamforming plus MUSIC and sparse OMP direction finding
+- true-time-delay wideband response evaluation, frequency-domain wideband MVDR helpers, and MIMO/polarimetric snapshot synthesis
 - IQ loading, synthesis, beamforming, and simulation-vs-measurement metrics
+- relative element-response calibration from known reference signals
 - config-driven simulation runs and optional Plotly HTML outputs
 - simulator-backed ML datasets, experiment runners, and environment wrappers
 
@@ -23,7 +24,7 @@ The codebase is functional and test-backed, but it is best treated as a compact 
 
 ## Current Limitations
 
-- adaptive processing is still built around narrowband or per-frequency-bin models; there is no true time-delay or STAP-style wideband beamforming path
+- adaptive processing is still built around narrowband or per-frequency-bin models; there is no STAP-style wideband adaptive beamforming path
 - MIMO and polarimetric support currently lives in the Python API helpers rather than the CLI or dashboard
 - the interactive dashboard remains a compact exploration UI rather than a full multi-geometry control surface
 - the toolkit is still research-oriented software, not a hard real-time embedded beamforming stack
@@ -92,10 +93,10 @@ Requirements:
 
 ## Quick Start
 
-Launch the dashboard:
+Run the default reproducible simulation:
 
 ```bash
-abf dashboard
+abf simulate --config config/default.yaml
 ```
 
 You can also invoke the package entrypoint directly:
@@ -104,10 +105,11 @@ You can also invoke the package entrypoint directly:
 python -m abf simulate --config config/default.yaml
 ```
 
-Run one config-driven simulation:
+Launch the optional dashboard after installing the UI extra:
 
 ```bash
-abf simulate --config config/default.yaml
+pip install -e ".[ui]"
+abf dashboard
 ```
 
 Run the tests:
@@ -123,6 +125,9 @@ The installed CLI entry point is `abf`.
 ```bash
 abf dashboard
 abf simulate --config config/default.yaml
+abf simulate --config config/lcmv_nulls.yaml
+abf simulate --config config/music_doa.yaml
+abf simulate --config config/sparse_omp_doa.yaml
 abf montecarlo --config config/default.yaml --runs 50 --jobs 4
 abf gallery --config config/default.yaml
 abf dataset --config config/ml/doa_regression.yaml
@@ -134,9 +139,9 @@ abf env-demo --config config/rl/beam_selection.yaml --steps 3
 Current runner scope:
 
 - array geometry: `ula`, `planar`
-- algorithms: `conventional`, `mvdr`, `lms`, `nlms`, `rls`
+- algorithms: `conventional`, `mvdr`, `lcmv`, `lms`, `nlms`, `rls`, `music`, `sparse_omp`
 
-The broader Python API also includes wideband MVDR helpers plus MIMO and polarimetric snapshot utilities beyond the current YAML runner surface.
+`music` scenarios estimate ULA source directions and write the pseudospectrum plus `estimated_thetas_deg` into `simulate.json`. They can use a fixed source count or `model_order: aic` / `model_order: mdl` for covariance-based source-count selection. `sparse_omp` scenarios use a fixed source count on the scan grid and write `sparse_spectrum_db`, `support_indices`, and `estimated_thetas_deg`; with plot output enabled, they also write `sparse_spectrum.html`. The broader Python API also includes wideband MVDR helpers plus MIMO and polarimetric snapshot utilities beyond the current YAML runner surface.
 
 ## Python Example
 
@@ -214,7 +219,7 @@ The test suite checks both numerical behavior and higher-level workflows, includ
 - planar-array agreement with an independent NumPy reference
 - deterministic null formation
 - near-field, wideband, and impairment-aware models
-- MVDR, MUSIC, and IQ-data utilities
+- MVDR, MUSIC, sparse OMP, and IQ-data utilities
 
 Run all tests with:
 

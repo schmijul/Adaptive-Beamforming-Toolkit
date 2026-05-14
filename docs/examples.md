@@ -88,6 +88,18 @@ This writes `simulate.json` to the configured output directory. The payload cont
 - complex-weight summaries
 - computed SINR
 
+Set `algorithm.name: music` for a ULA direction-finding scenario. In that mode, `simulate.json` contains the MUSIC pseudospectrum, `estimated_thetas_deg`, and the selected source count. Use `model_order: mdl` or `model_order: aic` when you want the runner to estimate the source count up to `num_sources`; when plot output is enabled, the runner writes `music_spectrum.html`.
+
+```bash
+abf simulate --config config/music_doa.yaml
+```
+
+Set `algorithm.name: sparse_omp` when you want a fixed-order sparse recovery scan over the same ULA grid. `simulate.json` contains `sparse_spectrum`, `sparse_spectrum_db`, `estimated_thetas_deg`, `support_indices`, `source_power`, `residual_power`, and `num_sources`; when plot output is enabled, the runner writes `sparse_spectrum.html`. Compare it directly with `config/music_doa.yaml` by using the same array, source, and sweep settings.
+
+```bash
+abf simulate --config config/sparse_omp_doa.yaml
+```
+
 Run repeated trials:
 
 ```bash

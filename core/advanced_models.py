@@ -244,6 +244,57 @@ def wideband_array_factor_linear(
     }
 
 
+def true_time_delay_array_factor_linear(
+    num_elements: int,
+    spacing_lambda: float,
+    theta_grid_deg: np.ndarray,
+    phi_grid_deg: np.ndarray,
+    theta_steer_deg: float,
+    phi_steer_deg: float,
+    center_frequency_hz: float,
+    frequency_hz: np.ndarray,
+    taper_name: str = "uniform",
+) -> dict[str, np.ndarray]:
+    if theta_grid_deg.shape != phi_grid_deg.shape:
+        raise ValueError("theta_grid_deg and phi_grid_deg must have the same shape")
+    if center_frequency_hz <= 0.0:
+        raise ValueError("center_frequency_hz must be > 0")
+
+    freqs = np.asarray(frequency_hz, dtype=float).reshape(-1)
+    if np.any(freqs <= 0.0):
+        raise ValueError("All frequencies must be > 0")
+
+    positions = _centered_positions(num_elements, spacing_lambda)
+    taper = np.asarray(amplitude_taper(num_elements, taper_name), dtype=float)
+    theta0 = np.deg2rad(theta_steer_deg)
+    phi0 = np.deg2rad(phi_steer_deg)
+    u0 = np.sin(theta0) * np.cos(phi0)
+
+    theta_rad = np.deg2rad(theta_grid_deg)
+    phi_rad = np.deg2rad(phi_grid_deg)
+    u = np.sin(theta_rad) * np.cos(phi_rad)
+
+    response = np.zeros((freqs.size, *theta_grid_deg.shape), dtype=np.complex128)
+    magnitude = np.zeros_like(response.real)
+    delay_weights = np.zeros((freqs.size, num_elements), dtype=np.complex128)
+    for idx, freq in enumerate(freqs):
+        frequency_scale = freq / center_frequency_hz
+        delay_weights[idx] = taper * np.exp(-1j * 2.0 * np.pi * frequency_scale * positions * u0)
+        for n, x_pos in enumerate(positions):
+            response[idx] += delay_weights[idx, n] * np.exp(1j * 2.0 * np.pi * frequency_scale * x_pos * u)
+        mag = np.abs(response[idx])
+        magnitude[idx] = mag / (mag.max() + 1e-12)
+
+    magnitude_db = 20.0 * np.log10(np.maximum(magnitude, 1e-12))
+    return {
+        "frequency_hz": freqs,
+        "response": response,
+        "magnitude": magnitude,
+        "magnitude_db": magnitude_db,
+        "delay_weights": delay_weights,
+    }
+
+
 def array_factor_planar_from_weights(
     weights: np.ndarray,
     num_x: int,

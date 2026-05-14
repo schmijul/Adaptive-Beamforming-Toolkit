@@ -141,9 +141,9 @@ The current signal model is intentionally compact. Important assumptions are:
 - narrowband complex-baseband representation for adaptive processing
 - optional per-frequency-bin wideband processing for frequency-domain MVDR
 - stationary covariance over the snapshot batch
-- no calibration errors unless impairments are explicitly added
-- no coherent multipath or model-order estimation logic beyond the provided MUSIC input parameter
-- no time-delay beamforming for true wideband waveform preservation
+- calibration helpers can estimate relative element errors from a known reference signal, but the signal model still assumes a stationary calibration state
+- MUSIC model-order selection is limited to covariance eigenvalue criteria such as AIC and MDL
+- true-time-delay support is currently a ULA response model, not a full adaptive waveform processor
 
 ## Mapping to Code
 

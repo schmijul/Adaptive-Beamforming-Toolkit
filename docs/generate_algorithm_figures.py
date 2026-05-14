@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import sys
 
 import matplotlib
 
@@ -9,7 +10,10 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-from algorithms.adaptive import doa_music_linear
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+from algorithms.adaptive import doa_music_linear, doa_sparse_omp_linear
 from core.advanced_models import (
     array_factor_linear_field_mode,
     array_factor_linear_with_impairments,
@@ -20,7 +24,6 @@ from core.beamforming import array_factor_linear, array_factor_linear_from_weigh
 from data.iq import simulate_array_iq
 
 
-ROOT = Path(__file__).resolve().parents[1]
 IMG_DIR = ROOT / "imgs"
 
 THETA = np.linspace(0.0, 180.0, 721)
@@ -104,6 +107,38 @@ def generate_music_figure() -> None:
     ax.set_ylim(-50.0, 1.0)
     ax.grid(True, alpha=0.25)
     _save(fig, "alg-music-spectrum.png")
+
+
+def generate_sparse_omp_figure() -> None:
+    theta_scan = np.linspace(0.0, 90.0, 181)
+    snapshots = simulate_array_iq(
+        num_elements=12,
+        num_snapshots=4096,
+        spacing_lambda=0.5,
+        source_thetas_deg=np.array([25.0]),
+        source_phis_deg=np.array([0.0]),
+        source_snr_db=np.array([20.0]),
+        random_seed=7,
+    )
+    sparse = doa_sparse_omp_linear(
+        snapshots=snapshots,
+        spacing_lambda=0.5,
+        theta_scan_deg=theta_scan,
+        num_sources=1,
+    )
+
+    spectrum = np.asarray(sparse["sparse_spectrum"], dtype=float)
+    spectrum_db = 10.0 * np.log10(np.maximum(spectrum / np.max(spectrum), 1e-15))
+    fig, ax = plt.subplots(figsize=(8.4, 4.8))
+    ax.plot(theta_scan, spectrum_db, lw=2.2, color="#2563eb")
+    for theta in sparse["estimated_thetas_deg"]:
+        ax.axvline(float(theta), color="tab:red", ls="--", lw=1.2)
+    ax.set_title("Sparse OMP DoA Spectrum")
+    ax.set_xlabel("Theta scan (deg)")
+    ax.set_ylabel("Relative source power (dB)")
+    ax.set_ylim(-60.0, 1.0)
+    ax.grid(True, alpha=0.25)
+    _save(fig, "alg-sparse-omp-spectrum.png")
 
 
 def generate_near_far_figure() -> None:
@@ -200,6 +235,7 @@ def generate_impairments_figure() -> None:
 def main() -> None:
     generate_null_steering_figure()
     generate_music_figure()
+    generate_sparse_omp_figure()
     generate_near_far_figure()
     generate_wideband_figure()
     generate_impairments_figure()

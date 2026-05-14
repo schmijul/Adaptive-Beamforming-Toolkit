@@ -65,7 +65,7 @@ and the compensating phase depends on `r_n`, not just on a direction cosine. Thi
 
 The steering laws in classical phased arrays are exact only at the design frequency. If fixed phase-shifter weights are designed at `f_0` and evaluated at another frequency `f`, the electrical spacing changes relative to wavelength. The result is beam squint: the apparent steering direction shifts with frequency.
 
-The repository models this explicitly in `wideband_array_factor_linear(...)` by holding the phase-shifter weights fixed at the center frequency and sweeping the response over multiple frequencies.
+The repository models this explicitly in `wideband_array_factor_linear(...)` by holding the phase-shifter weights fixed at the center frequency and sweeping the response over multiple frequencies. It also provides `true_time_delay_array_factor_linear(...)`, which applies frequency-dependent delay compensation so the main beam stays aligned across the evaluated band.
 
 ## Array Imperfections
 
