@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import replace
+import sys
+
+import pytest
 
 from simulations.config import AlgorithmConfig
 from simulations.config import load_scenario_config
+from simulations.config import parse_scenario_config
 from simulations.runner import run_monte_carlo, run_single_simulation
 
 
@@ -12,6 +16,18 @@ def test_load_default_config() -> None:
     assert config.name == "baseline_mvdr"
     assert config.algorithm.name == "mvdr"
     assert config.array.geometry == "ula"
+
+
+def test_load_config_can_resolve_installed_data_path(tmp_path, monkeypatch) -> None:
+    install_config_dir = tmp_path / "config"
+    install_config_dir.mkdir()
+    source = install_config_dir / "default.yaml"
+    source.write_text(open("config/default.yaml", encoding="utf-8").read(), encoding="utf-8")
+    monkeypatch.setattr(sys, "prefix", str(tmp_path))
+
+    config = load_scenario_config("config/default.yaml")
+
+    assert config.name == "baseline_mvdr"
 
 
 def test_single_and_montecarlo_runs_write_outputs(tmp_path) -> None:
@@ -123,6 +139,36 @@ def test_sparse_omp_example_config_runs(tmp_path) -> None:
     assert result["support_indices"] == [100]
     assert (tmp_path / "simulate.json").exists()
     assert (tmp_path / "sparse_spectrum.html").exists()
+
+
+def test_sparse_omp_config_rejects_planar_geometry() -> None:
+    payload = {
+        "name": "invalid_sparse_planar",
+        "seed": 1,
+        "snapshots": 128,
+        "array": {
+            "geometry": "planar",
+            "num_x": 3,
+            "num_y": 2,
+            "spacing_x_lambda": 0.5,
+            "spacing_y_lambda": 0.5,
+        },
+        "desired_source": {"theta_deg": 25.0, "phi_deg": 0.0, "snr_db": 20.0},
+        "interference_sources": [],
+        "algorithm": {"name": "sparse_omp", "num_sources": 1},
+        "sweep": {
+            "theta_start_deg": 0.0,
+            "theta_stop_deg": 90.0,
+            "theta_num": 181,
+            "phi_start_deg": 0.0,
+            "phi_stop_deg": 0.0,
+            "phi_num": 2,
+        },
+        "output": {"directory": "outputs/invalid", "save_plots": False},
+    }
+
+    with pytest.raises(ValueError, match="sparse_omp.*ula"):
+        parse_scenario_config(payload)
 
 
 def test_doa_montecarlo_reports_angle_error_summary(tmp_path) -> None:

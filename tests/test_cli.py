@@ -147,6 +147,8 @@ def test_cli_supports_sparse_omp_scenario(tmp_path) -> None:
     assert command_output["algorithm"] == "sparse_omp"
     assert Path(command_output["result_path"]) == tmp_path / "simulate.json"
     assert abs(command_output["estimated_thetas_deg"][0] - payload["desired_source"]["theta_deg"]) <= 1.0
+    assert command_output["support_indices"] == simulate_json["result"]["support_indices"]
+    assert "source_power" in command_output
     assert simulate_json["config"]["algorithm"]["name"] == "sparse_omp"
     assert "sparse_spectrum_db" in simulate_json["result"]
 

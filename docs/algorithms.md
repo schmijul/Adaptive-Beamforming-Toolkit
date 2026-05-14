@@ -146,6 +146,10 @@ Implemented entry point:
 
 - `algorithms.adaptive.doa_sparse_omp_linear(...)`
 
+Reference figure:
+
+![Sparse OMP DoA spectrum](../imgs/alg-sparse-omp-spectrum.png)
+
 Important boundaries:
 
 - ULA only in the current runner and public helper
@@ -258,7 +262,7 @@ The repository's adaptive-processing surface now includes:
 The repository does not currently ship dedicated implementations of:
 
 - Frost beamforming
-- sparse recovery DoA estimators
+- sparse recovery DoA estimators beyond fixed-order ULA OMP
 - STAP and full waveform-level wideband adaptive beamforming
 
 Related boundaries:

@@ -7,7 +7,7 @@ The repository is intentionally focused on compact, test-backed beamforming work
 - ideal ULA and planar-array factors
 - deterministic steering and null steering
 - selected advanced models for near-field, wideband, and impairments
-- covariance-based MVDR, LMS, NLMS, RLS, and MUSIC workflows
+- covariance-based MVDR, LMS, NLMS, RLS, MUSIC, and fixed-order sparse OMP workflows
 - lightweight IQ simulation plus planar, MIMO, and polarimetric helpers
 - a dashboard and config-driven CLI
 
@@ -19,7 +19,7 @@ Several models are deliberately simplified for clarity and speed:
 - wideband support includes true-time-delay response evaluation and subband MVDR helpers, but not STAP
 - calibration helpers estimate relative element response errors, but they are not a full measurement campaign framework
 - the simulation runner currently supports `ula` and `planar` geometries
-- the simulation runner supports MUSIC for ULA direction finding, but not planar MUSIC
+- the simulation runner supports MUSIC and sparse OMP for ULA direction finding, but not planar DoA scans
 - MIMO and polarimetric workflows are Python-API helpers rather than first-class CLI modes
 
 ## What The Toolkit Is Good For

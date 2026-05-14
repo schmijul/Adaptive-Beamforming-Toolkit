@@ -36,6 +36,15 @@ def run_simulate_command(config_path: str) -> Mapping[str, object]:
         summary["estimated_thetas_deg"] = result["estimated_thetas_deg"]
     if "sinr_db" in result:
         summary["sinr_db"] = result["sinr_db"]
+    if "support_indices" in result:
+        summary["support_indices"] = result["support_indices"]
+    if "source_power" in result:
+        summary["source_power"] = result["source_power"]
+    if config.output.save_plots:
+        if "music_spectrum_db" in result:
+            summary["plot_path"] = f"{config.output.directory}/music_spectrum.html"
+        if "sparse_spectrum_db" in result:
+            summary["plot_path"] = f"{config.output.directory}/sparse_spectrum.html"
     return summary
 
 

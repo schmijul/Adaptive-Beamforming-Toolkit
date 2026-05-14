@@ -54,15 +54,16 @@ Run the automated tests:
 pytest -q
 ```
 
-Run the dashboard directly:
+Run the default CLI simulation:
 
 ```bash
-python -m abf dashboard
+abf simulate --config config/default.yaml
 ```
 
-Or use the installed CLI:
+Run the optional dashboard after installing the UI extra:
 
 ```bash
+pip install -e ".[ui]"
 abf dashboard
 ```
 
@@ -80,4 +81,4 @@ The extension is defined in `setup.py` and compiled from `core/beamforming_cpp.c
 
 ## Optional Next Step
 
-Once installation succeeds, continue with [Getting Started](getting-started.md) for the first dashboard run, Python example, and CLI simulation workflow.
+Once installation succeeds, continue with [Getting Started](getting-started.md) for the first simulation run, Python example, and optional dashboard workflow.

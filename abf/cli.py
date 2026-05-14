@@ -25,7 +25,17 @@ def _build_parser() -> argparse.ArgumentParser:
     dashboard.add_argument("--port", type=int, default=8050)
     dashboard.add_argument("--debug", action="store_true")
 
-    simulate = sub.add_parser("simulate", help="Run one deterministic simulation from a YAML config")
+    simulate = sub.add_parser(
+        "simulate",
+        help="Run one deterministic simulation from a YAML config",
+        description="Run one deterministic beamforming or DoA simulation from a YAML config.",
+        epilog=(
+            "Example configs: config/default.yaml, config/lcmv_nulls.yaml, "
+            "config/music_doa.yaml, config/sparse_omp_doa.yaml. "
+            "Supported algorithms: conventional, mvdr, lcmv, lms, nlms, rls, music, sparse_omp. "
+            "Outputs: simulate.json plus optional HTML plots such as music_spectrum.html or sparse_spectrum.html."
+        ),
+    )
     simulate.add_argument("--config", default="config/default.yaml")
 
     monte = sub.add_parser("montecarlo", help="Run a Monte-Carlo simulation from a YAML config")

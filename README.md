@@ -93,10 +93,10 @@ Requirements:
 
 ## Quick Start
 
-Launch the dashboard:
+Run the default reproducible simulation:
 
 ```bash
-abf dashboard
+abf simulate --config config/default.yaml
 ```
 
 You can also invoke the package entrypoint directly:
@@ -105,10 +105,11 @@ You can also invoke the package entrypoint directly:
 python -m abf simulate --config config/default.yaml
 ```
 
-Run one config-driven simulation:
+Launch the optional dashboard after installing the UI extra:
 
 ```bash
-abf simulate --config config/default.yaml
+pip install -e ".[ui]"
+abf dashboard
 ```
 
 Run the tests:

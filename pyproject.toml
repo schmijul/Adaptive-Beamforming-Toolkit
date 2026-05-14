@@ -59,3 +59,9 @@ include-package-data = true
 
 [tool.setuptools.packages.find]
 include = ["abf", "abf.*", "algorithms", "core", "data", "simulations", "ui", "visualize"]
+
+[tool.setuptools.data-files]
+config = ["config/*.yaml"]
+docs = ["docs/*.md", "docs/*.py"]
+examples = ["examples/*.py"]
+imgs = ["imgs/*.png"]

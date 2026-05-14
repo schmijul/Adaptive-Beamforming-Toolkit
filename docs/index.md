@@ -27,7 +27,7 @@ The current repository includes:
 - Near-field focusing and far-field plane-wave modes.
 - Wideband beam-squint analysis with fixed phase-shifter weights.
 - Simplified element-pattern and mutual-coupling impairments.
-- MVDR/Capon, LMS, NLMS, and RLS beamforming plus MUSIC direction-of-arrival estimation.
+- MVDR/Capon, LMS, NLMS, and RLS beamforming plus MUSIC and fixed-order sparse OMP direction-of-arrival estimation.
 - Frequency-domain wideband MVDR helpers and MIMO/polarimetric simulation utilities.
 - IQ snapshot simulation, loading, beamforming, and comparison metrics.
 - A Dash dashboard plus a CLI for reproducible simulation runs.

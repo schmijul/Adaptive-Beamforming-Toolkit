@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+import sys
 from typing import Any
 
 import yaml
@@ -206,6 +207,8 @@ def parse_scenario_config(payload: dict[str, Any]) -> ScenarioConfig:
         raise ValueError("algorithm.model_order must be one of: fixed, aic, mdl")
     if config.algorithm.name == "music" and config.algorithm.num_sources >= config.array.num_elements:
         raise ValueError("algorithm.num_sources must be less than the number of array elements for MUSIC")
+    if config.algorithm.name == "sparse_omp" and config.array.geometry != "ula":
+        raise ValueError("algorithm.name: sparse_omp currently requires array.geometry: ula")
     if config.algorithm.name == "sparse_omp" and config.algorithm.num_sources > min(
         config.array.num_elements,
         config.sweep.theta_num,
@@ -228,7 +231,10 @@ def parse_scenario_config(payload: dict[str, Any]) -> ScenarioConfig:
 def load_scenario_config(path: str | Path) -> ScenarioConfig:
     source = Path(path)
     if not source.exists():
-        raise ValueError(f"Config file does not exist: {source}")
+        installed_source = Path(sys.prefix) / source
+        if source.is_absolute() or not installed_source.exists():
+            raise ValueError(f"Config file does not exist: {source}")
+        source = installed_source
 
     payload = yaml.safe_load(source.read_text(encoding="utf-8"))
     return parse_scenario_config(payload)
