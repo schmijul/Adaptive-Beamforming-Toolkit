@@ -25,7 +25,18 @@ def run_dashboard(*, host: str, port: int, debug: bool) -> None:
 def run_simulate_command(config_path: str) -> Mapping[str, object]:
     config = load_scenario_config(config_path)
     payload = run_single_simulation(config)
-    return {"mode": payload["mode"], "out_dir": config.output.directory}
+    result = payload["result"]
+    summary: dict[str, object] = {
+        "mode": payload["mode"],
+        "algorithm": config.algorithm.name,
+        "out_dir": config.output.directory,
+        "result_path": f"{config.output.directory}/simulate.json",
+    }
+    if "estimated_thetas_deg" in result:
+        summary["estimated_thetas_deg"] = result["estimated_thetas_deg"]
+    if "sinr_db" in result:
+        summary["sinr_db"] = result["sinr_db"]
+    return summary
 
 
 def run_montecarlo_command(config_path: str, *, runs: int, jobs: int) -> Mapping[str, object]:

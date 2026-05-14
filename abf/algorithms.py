@@ -3,6 +3,7 @@
 from algorithms.adaptive import (
     beamform_frequency_snapshots,
     doa_music_linear,
+    doa_sparse_omp_linear,
     estimate_covariance_matrix,
     estimate_music_model_order,
     estimate_wideband_covariance_matrices,
@@ -23,6 +24,7 @@ from algorithms.adaptive import (
 __all__ = [
     "beamform_frequency_snapshots",
     "doa_music_linear",
+    "doa_sparse_omp_linear",
     "estimate_covariance_matrix",
     "estimate_music_model_order",
     "estimate_wideband_covariance_matrices",

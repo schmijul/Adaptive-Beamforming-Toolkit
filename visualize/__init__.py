@@ -11,6 +11,7 @@ __all__ = [
     "build_heatmap",
     "build_music_spectrum",
     "build_pattern_3d",
+    "build_sparse_spectrum",
     "build_weights_plot",
 ]
 

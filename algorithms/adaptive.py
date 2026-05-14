@@ -472,3 +472,60 @@ def doa_music_linear(
         result["model_order_criterion"] = np.asarray(model_order["criterion"], dtype=float)
         result["model_order_candidates"] = np.asarray(model_order["candidate_num_sources"], dtype=int)
     return result
+
+
+def doa_sparse_omp_linear(
+    snapshots: np.ndarray,
+    spacing_lambda: float,
+    theta_scan_deg: np.ndarray,
+    num_sources: int,
+    phi_deg: float = 0.0,
+) -> dict[str, np.ndarray | int]:
+    x = np.asarray(snapshots, dtype=np.complex128)
+    theta_scan = np.asarray(theta_scan_deg, dtype=float).reshape(-1)
+    if x.ndim != 2:
+        raise ValueError("snapshots must be a 2D array of shape (num_elements, num_snapshots)")
+    if theta_scan.size < 1:
+        raise ValueError("theta_scan_deg must contain at least one angle")
+    if not (1 <= num_sources <= min(x.shape[0], theta_scan.size)):
+        raise ValueError("num_sources must be in [1, min(num_elements, num_scan_points)]")
+
+    dictionary = np.stack(
+        [linear_steering_vector(x.shape[0], spacing_lambda, theta, phi_deg) for theta in theta_scan],
+        axis=1,
+    )
+    dictionary = dictionary / np.maximum(np.linalg.norm(dictionary, axis=0, keepdims=True), 1e-15)
+    residual = x.copy()
+    selected: list[int] = []
+    residual_power = [float(np.linalg.norm(residual) ** 2)]
+
+    for _ in range(num_sources):
+        correlations = dictionary.conj().T @ residual
+        scores = np.sum(np.abs(correlations) ** 2, axis=1)
+        if selected:
+            scores[np.asarray(selected, dtype=int)] = -np.inf
+        selected.append(int(np.argmax(scores)))
+
+        active_dictionary = dictionary[:, selected]
+        coefficients, *_ = np.linalg.lstsq(active_dictionary, x, rcond=None)
+        residual = x - active_dictionary @ coefficients
+        residual_power.append(float(np.linalg.norm(residual) ** 2))
+
+    support = np.asarray(selected, dtype=int)
+    support_order = np.argsort(theta_scan[support])
+    support = support[support_order]
+    active_dictionary = dictionary[:, support]
+    coefficients, *_ = np.linalg.lstsq(active_dictionary, x, rcond=None)
+    source_power = np.mean(np.abs(coefficients) ** 2, axis=1)
+    sparse_spectrum = np.zeros(theta_scan.size, dtype=float)
+    sparse_spectrum[support] = source_power
+
+    return {
+        "theta_scan_deg": theta_scan,
+        "sparse_spectrum": sparse_spectrum,
+        "estimated_thetas_deg": theta_scan[support],
+        "support_indices": support,
+        "source_power": source_power,
+        "residual_power": np.asarray(residual_power, dtype=float),
+        "num_sources": int(num_sources),
+    }

@@ -9,6 +9,7 @@ from pathlib import Path
 import numpy as np
 
 from algorithms.adaptive import (
+    doa_sparse_omp_linear,
     doa_music_linear,
     estimate_covariance_matrix,
     lcmv_weights,
@@ -23,7 +24,14 @@ from core.advanced_models import array_factor_planar_from_weights
 from core.beamforming import array_factor_linear_from_weights
 from data.iq import simulate_array_iq_components
 from simulations.config import ScenarioConfig
-from visualize.plots import build_elevation_cut, build_heatmap, build_music_spectrum, build_pattern_3d, build_weights_plot
+from visualize.plots import (
+    build_elevation_cut,
+    build_heatmap,
+    build_music_spectrum,
+    build_pattern_3d,
+    build_sparse_spectrum,
+    build_weights_plot,
+)
 
 
 def _build_grids(config: ScenarioConfig) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
@@ -225,6 +233,31 @@ def _run_once(config: ScenarioConfig, seed: int) -> dict[str, object]:
             result["model_order_criterion"] = np.asarray(music["model_order_criterion"], dtype=float).tolist()
         return result
 
+    if config.algorithm.name == "sparse_omp":
+        if config.array.geometry != "ula" or config.array.spacing_lambda is None:
+            raise ValueError("Sparse OMP scenarios currently require array.geometry: ula")
+
+        sparse = doa_sparse_omp_linear(
+            snapshots=snapshots,
+            spacing_lambda=config.array.spacing_lambda,
+            theta_scan_deg=theta,
+            num_sources=config.algorithm.num_sources,
+            phi_deg=config.desired_source.phi_deg,
+        )
+        spectrum = np.asarray(sparse["sparse_spectrum"], dtype=float)
+        spectrum_db = 10.0 * np.log10(np.maximum(spectrum / max(float(np.max(spectrum)), 1e-15), 1e-15))
+        return {
+            "seed": seed,
+            "theta_scan_deg": theta.tolist(),
+            "sparse_spectrum": spectrum.tolist(),
+            "sparse_spectrum_db": spectrum_db.tolist(),
+            "estimated_thetas_deg": np.asarray(sparse["estimated_thetas_deg"], dtype=float).tolist(),
+            "support_indices": np.asarray(sparse["support_indices"], dtype=int).tolist(),
+            "source_power": np.asarray(sparse["source_power"], dtype=float).tolist(),
+            "residual_power": np.asarray(sparse["residual_power"], dtype=float).tolist(),
+            "num_sources": int(sparse["num_sources"]),
+        }
+
     desired_signal = components["source_signals"][0]
     weights = _select_weights(config, snapshots, desired_signal=desired_signal)
     pattern = _evaluate_pattern(config, weights, theta_grid_deg=theta_grid, phi_grid_deg=phi_grid)
@@ -260,6 +293,13 @@ def _write_plots(config: ScenarioConfig, result: dict[str, object], output_dir: 
         spectrum_db = np.asarray(result["music_spectrum_db"], dtype=float)
         estimated = np.asarray(result["estimated_thetas_deg"], dtype=float)
         build_music_spectrum(theta, spectrum_db, estimated).write_html(output_dir / "music_spectrum.html")
+        return
+
+    if "sparse_spectrum_db" in result:
+        theta = np.asarray(result["theta_scan_deg"], dtype=float)
+        spectrum_db = np.asarray(result["sparse_spectrum_db"], dtype=float)
+        estimated = np.asarray(result["estimated_thetas_deg"], dtype=float)
+        build_sparse_spectrum(theta, spectrum_db, estimated).write_html(output_dir / "sparse_spectrum.html")
         return
 
     theta = np.asarray(result["theta_deg"], dtype=float)
@@ -317,6 +357,47 @@ def run_monte_carlo(config: ScenarioConfig, runs: int, jobs: int = 1) -> dict[st
     else:
         with ThreadPoolExecutor(max_workers=jobs) as executor:
             per_run = list(executor.map(lambda seed: _run_once(config, seed=seed), seeds))
+
+    if "estimated_thetas_deg" in per_run[0]:
+        angle_errors = np.array(
+            [
+                float(np.min(np.abs(np.asarray(entry["estimated_thetas_deg"], dtype=float) - config.desired_source.theta_deg)))
+                for entry in per_run
+            ],
+            dtype=float,
+        )
+        summary = {
+            "runs": runs,
+            "jobs": jobs,
+            "seed_start": config.seed,
+            "seed_end": config.seed + runs - 1,
+            "angle_error_mean_deg": float(np.mean(angle_errors)),
+            "angle_error_std_deg": float(np.std(angle_errors)),
+            "angle_error_min_deg": float(np.min(angle_errors)),
+            "angle_error_max_deg": float(np.max(angle_errors)),
+        }
+
+        payload: dict[str, object] = {
+            "mode": "montecarlo",
+            "created_at_utc": datetime.now(timezone.utc).isoformat(),
+            "config": asdict(config),
+            "summary": summary,
+            "runs": [
+                {
+                    "seed": entry["seed"],
+                    "estimated_thetas_deg": entry["estimated_thetas_deg"],
+                    "angle_error_deg": float(error),
+                }
+                for entry, error in zip(per_run, angle_errors)
+            ],
+        }
+
+        if config.output.save_plots:
+            best_idx = int(np.argmin(angle_errors))
+            _write_plots(config, per_run[best_idx], output_dir)
+
+        (output_dir / "montecarlo.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        return payload
 
     sinr = np.array([entry["sinr_db"] for entry in per_run], dtype=float)
 

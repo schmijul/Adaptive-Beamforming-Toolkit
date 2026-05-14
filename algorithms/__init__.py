@@ -9,6 +9,7 @@ from . import adaptive as _adaptive
 __all__ = [
     "beamform_frequency_snapshots",
     "doa_music_linear",
+    "doa_sparse_omp_linear",
     "estimate_covariance_matrix",
     "estimate_music_model_order",
     "estimate_wideband_covariance_matrices",

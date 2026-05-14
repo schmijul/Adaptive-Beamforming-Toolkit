@@ -130,7 +130,29 @@ Important boundary:
 
 - AIC/MDL model-order selection assumes the sample covariance has a clear signal/noise eigenvalue separation.
 
-## 5. Near-Field Focusing
+## 5. Sparse OMP DoA Estimation
+
+Sparse OMP treats direction finding as a grid-based sparse recovery problem. The runner builds a ULA steering dictionary over `theta_scan_deg`, then repeatedly selects the grid column that best explains the current residual snapshots. After `num_sources` selections, it solves a least-squares fit over the selected support.
+
+Use it from the CLI with:
+
+```bash
+abf simulate --config config/sparse_omp_doa.yaml
+```
+
+The output artifact contains `theta_scan_deg`, `sparse_spectrum`, `sparse_spectrum_db`, `estimated_thetas_deg`, `support_indices`, `source_power`, `residual_power`, and `num_sources`. When plot output is enabled, inspect `sparse_spectrum.html`.
+
+Implemented entry point:
+
+- `algorithms.adaptive.doa_sparse_omp_linear(...)`
+
+Important boundaries:
+
+- ULA only in the current runner and public helper
+- grid-based estimates, so off-grid sources are quantized to nearby scan angles
+- fixed source count through `algorithm.num_sources`; there is no automatic sparse model-order selection yet
+
+## 6. Near-Field Focusing
 
 The near-field model replaces the plane-wave approximation with an element-to-focus distance law:
 
@@ -156,7 +178,7 @@ Reference figure:
 
 ![Near-field versus far-field](../imgs/alg-near-vs-far.png)
 
-## 6. Wideband Response Analysis
+## 7. Wideband Response Analysis
 
 The wideband helper assumes phase-shifter weights are designed at a center frequency `f_0` and then evaluated at other frequencies. The effective electrical spacing scales as
 
@@ -176,7 +198,7 @@ Reference figure:
 
 ![Wideband beam squint](../imgs/alg-wideband-squint.png)
 
-## 7. Element Patterns and Mutual Coupling
+## 8. Element Patterns and Mutual Coupling
 
 The impairment-aware array model modifies the ideal response in two ways:
 
@@ -205,7 +227,7 @@ Reference figure:
 
 ![Impairment-aware pattern](../imgs/alg-impairments.png)
 
-## 8. Digital, Analog, and Hybrid Architectures
+## 9. Digital, Analog, and Hybrid Architectures
 
 The repository also includes a simplified architecture-level mapping from ideal complex weights to three implementation styles:
 
@@ -219,7 +241,7 @@ Implemented entry point:
 
 - `core.advanced_models.synthesize_beamforming_architecture(...)`
 
-## 9. Current Adaptive Scope and Omissions
+## 10. Current Adaptive Scope and Omissions
 
 The repository's adaptive-processing surface now includes:
 
@@ -230,6 +252,7 @@ The repository's adaptive-processing surface now includes:
 - per-frequency-bin wideband MVDR helpers for frequency-domain snapshot data
 - true-time-delay wideband response evaluation for ULA array factors
 - MUSIC is available for DoA estimation, not for adaptive weight synthesis
+- sparse OMP is available for fixed-order ULA DoA estimation on a scan grid
 - simple MIMO and polarimetric helper models in the Python API
 
 The repository does not currently ship dedicated implementations of:

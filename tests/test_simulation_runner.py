@@ -107,6 +107,38 @@ def test_music_example_config_runs(tmp_path) -> None:
     assert result["model_order_candidates"] == [0, 1, 2, 3, 4]
 
 
+def test_sparse_omp_example_config_runs(tmp_path) -> None:
+    base = load_scenario_config("config/sparse_omp_doa.yaml")
+    config = replace(base, output=replace(base.output, directory=str(tmp_path), save_plots=True))
+
+    single = run_single_simulation(config)
+    result = single["result"]
+
+    assert single["config"]["algorithm"]["name"] == "sparse_omp"
+    assert abs(result["estimated_thetas_deg"][0] - config.desired_source.theta_deg) <= 1.0
+    assert len(result["theta_scan_deg"]) == 361
+    assert len(result["sparse_spectrum"]) == 361
+    assert len(result["sparse_spectrum_db"]) == 361
+    assert result["num_sources"] == 1
+    assert result["support_indices"] == [100]
+    assert (tmp_path / "simulate.json").exists()
+    assert (tmp_path / "sparse_spectrum.html").exists()
+
+
+def test_doa_montecarlo_reports_angle_error_summary(tmp_path) -> None:
+    base = load_scenario_config("config/sparse_omp_doa.yaml")
+    config = replace(base, output=replace(base.output, directory=str(tmp_path), save_plots=False), snapshots=512)
+
+    mc = run_monte_carlo(config, runs=3, jobs=1)
+
+    assert mc["mode"] == "montecarlo"
+    assert mc["summary"]["runs"] == 3
+    assert "angle_error_mean_deg" in mc["summary"]
+    assert "sinr_mean_db" not in mc["summary"]
+    assert len(mc["runs"]) == 3
+    assert "estimated_thetas_deg" in mc["runs"][0]
+
+
 def test_lcmv_example_config_runs_with_null_constraints(tmp_path) -> None:
     base = load_scenario_config("config/lcmv_nulls.yaml")
     config = replace(base, output=replace(base.output, directory=str(tmp_path), save_plots=False), snapshots=512)

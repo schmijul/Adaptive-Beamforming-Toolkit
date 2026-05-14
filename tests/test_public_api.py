@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 
 import abf
-from abf.algorithms import doa_music_linear, linear_steering_vector, mvdr_weights
+from abf.algorithms import doa_music_linear, doa_sparse_omp_linear, linear_steering_vector, mvdr_weights
 from abf.core import array_factor_linear
 from abf.data import simulate_array_iq
 from abf.simulations import load_scenario_config
@@ -62,6 +62,10 @@ def test_abf_algorithms_and_data_modules_interoperate() -> None:
     assert weights.shape == (8,)
 
 
+def test_sparse_omp_is_publicly_importable() -> None:
+    assert callable(doa_sparse_omp_linear)
+
+
 def test_abf_simulations_loads_existing_yaml_scenarios() -> None:
     config = load_scenario_config("config/default.yaml")
     assert config.name == "baseline_mvdr"
@@ -72,7 +76,13 @@ def test_top_level_scenario_configs_are_loadable() -> None:
     assert configs
 
     loaded = [load_scenario_config(path) for path in configs]
-    assert {config.name for config in loaded} >= {"baseline_mvdr", "baseline_conventional", "music_doa", "lcmv_nulls"}
+    assert {config.name for config in loaded} >= {
+        "baseline_mvdr",
+        "baseline_conventional",
+        "music_doa",
+        "sparse_omp_doa",
+        "lcmv_nulls",
+    }
 
 
 def test_source_distribution_manifest_includes_user_facing_assets() -> None:

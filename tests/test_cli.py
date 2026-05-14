@@ -26,7 +26,10 @@ def test_cli_simulate_returns_json_and_writes_output(tmp_path) -> None:
     simulate_json = json.loads((tmp_path / "simulate.json").read_text(encoding="utf-8"))
 
     assert command_output["mode"] == "single"
+    assert command_output["algorithm"] == "mvdr"
     assert Path(command_output["out_dir"]) == tmp_path
+    assert Path(command_output["result_path"]) == tmp_path / "simulate.json"
+    assert "sinr_db" in command_output
     assert simulate_json["mode"] == "single"
 
 
@@ -115,8 +118,37 @@ def test_cli_supports_music_scenario(tmp_path) -> None:
     simulate_json = json.loads((tmp_path / "simulate.json").read_text(encoding="utf-8"))
 
     assert command_output["mode"] == "single"
+    assert command_output["algorithm"] == "music"
+    assert Path(command_output["result_path"]) == tmp_path / "simulate.json"
+    assert abs(command_output["estimated_thetas_deg"][0] - payload["desired_source"]["theta_deg"]) <= 2.0
     assert simulate_json["config"]["algorithm"]["name"] == "music"
     assert abs(simulate_json["result"]["estimated_thetas_deg"][0] - payload["desired_source"]["theta_deg"]) <= 2.0
+
+
+def test_cli_supports_sparse_omp_scenario(tmp_path) -> None:
+    payload = yaml.safe_load(Path("config/sparse_omp_doa.yaml").read_text(encoding="utf-8"))
+    payload["snapshots"] = 1024
+    payload["output"]["directory"] = str(tmp_path)
+    payload["output"]["save_plots"] = False
+    config_path = tmp_path / "sparse_omp.yaml"
+    config_path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
+
+    completed = subprocess.run(
+        [sys.executable, "-m", "abf", "simulate", "--config", str(config_path)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    command_output = json.loads(completed.stdout)
+    simulate_json = json.loads((tmp_path / "simulate.json").read_text(encoding="utf-8"))
+
+    assert command_output["mode"] == "single"
+    assert command_output["algorithm"] == "sparse_omp"
+    assert Path(command_output["result_path"]) == tmp_path / "simulate.json"
+    assert abs(command_output["estimated_thetas_deg"][0] - payload["desired_source"]["theta_deg"]) <= 1.0
+    assert simulate_json["config"]["algorithm"]["name"] == "sparse_omp"
+    assert "sparse_spectrum_db" in simulate_json["result"]
 
 
 def test_cli_supports_lcmv_scenario(tmp_path) -> None:

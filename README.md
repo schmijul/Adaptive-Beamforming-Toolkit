@@ -11,7 +11,7 @@ The current revision also adds a thin `abf.ml` layer for simulator-backed datase
 - near-field focusing and far-field pattern evaluation
 - wideband beam-squint analysis for phase-steered arrays
 - simplified element-pattern and mutual-coupling impairment modeling
-- MVDR/Capon, LMS, NLMS, and RLS beamforming plus MUSIC direction finding
+- MVDR/Capon, LMS, NLMS, and RLS beamforming plus MUSIC and sparse OMP direction finding
 - true-time-delay wideband response evaluation, frequency-domain wideband MVDR helpers, and MIMO/polarimetric snapshot synthesis
 - IQ loading, synthesis, beamforming, and simulation-vs-measurement metrics
 - relative element-response calibration from known reference signals
@@ -126,6 +126,7 @@ abf dashboard
 abf simulate --config config/default.yaml
 abf simulate --config config/lcmv_nulls.yaml
 abf simulate --config config/music_doa.yaml
+abf simulate --config config/sparse_omp_doa.yaml
 abf montecarlo --config config/default.yaml --runs 50 --jobs 4
 abf gallery --config config/default.yaml
 abf dataset --config config/ml/doa_regression.yaml
@@ -137,9 +138,9 @@ abf env-demo --config config/rl/beam_selection.yaml --steps 3
 Current runner scope:
 
 - array geometry: `ula`, `planar`
-- algorithms: `conventional`, `mvdr`, `lcmv`, `lms`, `nlms`, `rls`, `music`
+- algorithms: `conventional`, `mvdr`, `lcmv`, `lms`, `nlms`, `rls`, `music`, `sparse_omp`
 
-`music` scenarios estimate ULA source directions and write the pseudospectrum plus `estimated_thetas_deg` into `simulate.json`. They can use a fixed source count or `model_order: aic` / `model_order: mdl` for covariance-based source-count selection. The broader Python API also includes wideband MVDR helpers plus MIMO and polarimetric snapshot utilities beyond the current YAML runner surface.
+`music` scenarios estimate ULA source directions and write the pseudospectrum plus `estimated_thetas_deg` into `simulate.json`. They can use a fixed source count or `model_order: aic` / `model_order: mdl` for covariance-based source-count selection. `sparse_omp` scenarios use a fixed source count on the scan grid and write `sparse_spectrum_db`, `support_indices`, and `estimated_thetas_deg`; with plot output enabled, they also write `sparse_spectrum.html`. The broader Python API also includes wideband MVDR helpers plus MIMO and polarimetric snapshot utilities beyond the current YAML runner surface.
 
 ## Python Example
 
@@ -217,7 +218,7 @@ The test suite checks both numerical behavior and higher-level workflows, includ
 - planar-array agreement with an independent NumPy reference
 - deterministic null formation
 - near-field, wideband, and impairment-aware models
-- MVDR, MUSIC, and IQ-data utilities
+- MVDR, MUSIC, sparse OMP, and IQ-data utilities
 
 Run all tests with:
 

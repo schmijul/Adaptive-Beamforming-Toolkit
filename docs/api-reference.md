@@ -112,6 +112,8 @@ This module contains covariance-based adaptive processing helpers.
   Estimates source count with AIC or MDL.
 - `doa_music_linear(...)`
   Builds a ULA scan manifold over `theta_scan_deg`, computes the MUSIC spectrum, and returns peak estimates.
+- `doa_sparse_omp_linear(...)`
+  Runs fixed-order OMP on a ULA scan dictionary and returns the selected grid angles plus sparse power estimates.
 
 Typical output keys from `doa_music_linear(...)`:
 
@@ -119,6 +121,16 @@ Typical output keys from `doa_music_linear(...)`:
 - `spectrum`
 - `estimated_thetas_deg`
 - `covariance_matrix`
+- `num_sources`
+
+Typical output keys from `doa_sparse_omp_linear(...)`:
+
+- `theta_scan_deg`
+- `sparse_spectrum`
+- `estimated_thetas_deg`
+- `support_indices`
+- `source_power`
+- `residual_power`
 - `num_sources`
 
 ## `abf.data`
@@ -160,7 +172,7 @@ The config-driven simulation runner is the backend behind the CLI.
 Current supported runner scope:
 
 - `array.geometry`: `ula`, `planar`
-- `algorithm.name`: `conventional`, `mvdr`, `lcmv`, `lms`, `nlms`, `rls`, `music`
+- `algorithm.name`: `conventional`, `mvdr`, `lcmv`, `lms`, `nlms`, `rls`, `music`, `sparse_omp`
 
 Common top-level return keys:
 
@@ -195,6 +207,7 @@ These functions build the Plotly figures used by the dashboard and optional simu
 
 - `build_elevation_cut(theta_deg, magnitude_db, theta_steer_deg)`
 - `build_music_spectrum(theta_deg, spectrum_db, estimated_thetas_deg)`
+- `build_sparse_spectrum(theta_deg, spectrum_db, estimated_thetas_deg)`
 - `build_heatmap(theta_deg, phi_deg, magnitude_db)`
 - `build_pattern_3d(theta_deg, phi_deg, magnitude)`
 - `build_weights_plot(positions_lambda, amplitudes, phase_weights)`

@@ -94,6 +94,12 @@ Set `algorithm.name: music` for a ULA direction-finding scenario. In that mode, 
 abf simulate --config config/music_doa.yaml
 ```
 
+Set `algorithm.name: sparse_omp` when you want a fixed-order sparse recovery scan over the same ULA grid. `simulate.json` contains `sparse_spectrum`, `sparse_spectrum_db`, `estimated_thetas_deg`, `support_indices`, `source_power`, `residual_power`, and `num_sources`; when plot output is enabled, the runner writes `sparse_spectrum.html`. Compare it directly with `config/music_doa.yaml` by using the same array, source, and sweep settings.
+
+```bash
+abf simulate --config config/sparse_omp_doa.yaml
+```
+
 Run repeated trials:
 
 ```bash

@@ -137,8 +137,8 @@ def parse_scenario_config(payload: dict[str, Any]) -> ScenarioConfig:
     algorithm_data = payload["algorithm"]
     _require_keys(algorithm_data, ("name",), "algorithm")
     algorithm_name = str(algorithm_data["name"]).lower()
-    if algorithm_name not in {"conventional", "mvdr", "lms", "nlms", "rls", "lcmv", "music"}:
-        raise ValueError("algorithm.name must be one of: conventional, mvdr, lcmv, lms, nlms, rls, music")
+    if algorithm_name not in {"conventional", "mvdr", "lms", "nlms", "rls", "lcmv", "music", "sparse_omp"}:
+        raise ValueError("algorithm.name must be one of: conventional, mvdr, lcmv, lms, nlms, rls, music, sparse_omp")
 
     sweep_data = payload["sweep"]
     _require_keys(
@@ -206,6 +206,11 @@ def parse_scenario_config(payload: dict[str, Any]) -> ScenarioConfig:
         raise ValueError("algorithm.model_order must be one of: fixed, aic, mdl")
     if config.algorithm.name == "music" and config.algorithm.num_sources >= config.array.num_elements:
         raise ValueError("algorithm.num_sources must be less than the number of array elements for MUSIC")
+    if config.algorithm.name == "sparse_omp" and config.algorithm.num_sources > min(
+        config.array.num_elements,
+        config.sweep.theta_num,
+    ):
+        raise ValueError("algorithm.num_sources must be <= min(array.num_elements, sweep.theta_num) for sparse_omp")
     if config.algorithm.step_size <= 0.0:
         raise ValueError("algorithm.step_size must be > 0")
     if config.algorithm.leakage < 0.0:

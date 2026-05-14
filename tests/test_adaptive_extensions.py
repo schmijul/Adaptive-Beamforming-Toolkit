@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from abf.algorithms import (
+    doa_sparse_omp_linear,
     estimate_wideband_covariance_matrices,
     lcmv_weights,
     linear_steering_vector,
@@ -80,6 +82,34 @@ def test_wideband_mvdr_operates_per_frequency_bin() -> None:
 
     assert weights.shape == steering.shape
     assert np.allclose(distortionless, np.ones(freqs.size), atol=2e-2)
+
+
+def test_sparse_omp_recovers_two_on_grid_ula_sources() -> None:
+    rng = np.random.default_rng(23)
+    theta_scan = np.linspace(0.0, 90.0, 91)
+    source_thetas = np.array([20.0, 55.0])
+    steering = np.column_stack([linear_steering_vector(10, 0.5, theta, 0.0) for theta in source_thetas])
+    source_signals = (
+        rng.normal(size=(source_thetas.size, 512)) + 1j * rng.normal(size=(source_thetas.size, 512))
+    ) / np.sqrt(2.0)
+    snapshots = steering @ source_signals
+
+    result = doa_sparse_omp_linear(snapshots, spacing_lambda=0.5, theta_scan_deg=theta_scan, num_sources=2)
+
+    assert np.allclose(result["estimated_thetas_deg"], source_thetas)
+    assert result["support_indices"].tolist() == [20, 55]
+    assert result["sparse_spectrum"].shape == theta_scan.shape
+    assert result["num_sources"] == 2
+
+
+def test_sparse_omp_rejects_invalid_inputs() -> None:
+    snapshots = np.ones((4, 16), dtype=np.complex128)
+    with pytest.raises(ValueError, match="snapshots"):
+        doa_sparse_omp_linear(np.ones(4), spacing_lambda=0.5, theta_scan_deg=np.array([10.0]), num_sources=1)
+    with pytest.raises(ValueError, match="theta_scan_deg"):
+        doa_sparse_omp_linear(snapshots, spacing_lambda=0.5, theta_scan_deg=np.array([]), num_sources=1)
+    with pytest.raises(ValueError, match="num_sources"):
+        doa_sparse_omp_linear(snapshots, spacing_lambda=0.5, theta_scan_deg=np.array([10.0]), num_sources=2)
 
 
 def test_lcmv_weights_enforce_multiple_linear_constraints() -> None:
