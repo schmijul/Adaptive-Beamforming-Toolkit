@@ -144,6 +144,32 @@ def mvdr_weights(
     return (r_inv_a / denom).reshape(-1)
 
 
+def lcmv_weights(
+    covariance_matrix: np.ndarray,
+    constraint_matrix: np.ndarray,
+    response_vector: np.ndarray,
+    diagonal_loading: float = 1e-3,
+) -> np.ndarray:
+    r = np.asarray(covariance_matrix, dtype=np.complex128)
+    c = np.asarray(constraint_matrix, dtype=np.complex128)
+    f = np.asarray(response_vector, dtype=np.complex128).reshape(-1, 1)
+
+    if r.shape[0] != r.shape[1]:
+        raise ValueError("covariance_matrix must be square")
+    if c.ndim != 2 or c.shape[0] != r.shape[0]:
+        raise ValueError("constraint_matrix must have shape (num_elements, num_constraints)")
+    if c.shape[1] < 1:
+        raise ValueError("constraint_matrix must include at least one constraint")
+    if f.shape[0] != c.shape[1]:
+        raise ValueError("response_vector length must match the number of constraints")
+
+    loaded = r + diagonal_loading * np.eye(r.shape[0], dtype=np.complex128)
+    r_inv_c = np.linalg.solve(loaded, c)
+    middle = c.conj().T @ r_inv_c
+    constrained = np.linalg.solve(middle, f)
+    return (r_inv_c @ constrained).reshape(-1)
+
+
 def wideband_mvdr_weights(
     covariance_matrices: np.ndarray,
     steering_vectors: np.ndarray,
@@ -345,14 +371,65 @@ def music_spectrum(
     return np.real(numerator / np.maximum(denominator, 1e-15))
 
 
+def estimate_music_model_order(
+    covariance_matrix: np.ndarray,
+    num_snapshots: int,
+    max_sources: int | None = None,
+    method: str = "mdl",
+) -> dict[str, np.ndarray | int | str]:
+    r = np.asarray(covariance_matrix, dtype=np.complex128)
+    if r.shape[0] != r.shape[1]:
+        raise ValueError("covariance_matrix must be square")
+    if num_snapshots < 2:
+        raise ValueError("num_snapshots must be >= 2")
+
+    num_elements = r.shape[0]
+    if max_sources is None:
+        max_sources = num_elements - 1
+    if not (0 <= max_sources < num_elements):
+        raise ValueError("max_sources must be in [0, num_elements-1]")
+
+    method_name = method.lower()
+    if method_name not in {"aic", "mdl"}:
+        raise ValueError("method must be one of: aic, mdl")
+
+    eigvals = np.sort(np.real(np.linalg.eigvalsh(r)))[::-1]
+    eigvals = np.maximum(eigvals, 1e-15)
+    candidates = np.arange(max_sources + 1, dtype=int)
+    scores = np.zeros(candidates.size, dtype=float)
+
+    for idx, source_count in enumerate(candidates):
+        noise = eigvals[source_count:]
+        noise_count = noise.size
+        geometric_mean = float(np.exp(np.mean(np.log(noise))))
+        arithmetic_mean = float(np.mean(noise))
+        likelihood = num_snapshots * noise_count * np.log(arithmetic_mean / geometric_mean)
+        free_parameters = source_count * (2 * num_elements - source_count)
+
+        if method_name == "aic":
+            scores[idx] = likelihood + 2.0 * free_parameters
+        else:
+            scores[idx] = likelihood + 0.5 * free_parameters * np.log(num_snapshots)
+
+    best_idx = int(np.argmin(scores))
+    return {
+        "method": method_name,
+        "estimated_num_sources": int(candidates[best_idx]),
+        "candidate_num_sources": candidates,
+        "criterion": scores,
+        "eigenvalues": eigvals,
+    }
+
+
 def doa_music_linear(
     snapshots: np.ndarray,
     spacing_lambda: float,
     theta_scan_deg: np.ndarray,
-    num_sources: int = 1,
+    num_sources: int | str = 1,
     phi_deg: float = 0.0,
     diagonal_loading: float = 1e-3,
-) -> dict[str, np.ndarray]:
+    max_sources: int | None = None,
+) -> dict[str, object]:
     x = np.asarray(snapshots, dtype=np.complex128)
     theta_scan = np.asarray(theta_scan_deg, dtype=float).reshape(-1)
     if x.ndim != 2:
@@ -364,13 +441,34 @@ def doa_music_linear(
         axis=1,
     )
     covariance = estimate_covariance_matrix(x, diagonal_loading=diagonal_loading)
-    spectrum = music_spectrum(covariance, scan_vectors, num_sources=num_sources)
+    model_order: dict[str, np.ndarray | int | str] | None = None
+    if isinstance(num_sources, str):
+        model_order = estimate_music_model_order(
+            covariance,
+            num_snapshots=x.shape[1],
+            max_sources=max_sources,
+            method=num_sources,
+        )
+        source_count = int(model_order["estimated_num_sources"])
+    else:
+        source_count = int(num_sources)
 
-    peak_indices = np.argsort(spectrum)[-num_sources:]
+    if source_count < 1:
+        raise ValueError("MUSIC source count must be >= 1")
+
+    spectrum = music_spectrum(covariance, scan_vectors, num_sources=source_count)
+
+    peak_indices = np.argsort(spectrum)[-source_count:]
     peak_indices.sort()
-    return {
+    result = {
         "theta_scan_deg": theta_scan,
         "spectrum": spectrum,
         "estimated_thetas_deg": theta_scan[peak_indices],
         "covariance_matrix": covariance,
+        "num_sources": source_count,
     }
+    if model_order is not None:
+        result["model_order_method"] = str(model_order["method"])
+        result["model_order_criterion"] = np.asarray(model_order["criterion"], dtype=float)
+        result["model_order_candidates"] = np.asarray(model_order["candidate_num_sources"], dtype=int)
+    return result

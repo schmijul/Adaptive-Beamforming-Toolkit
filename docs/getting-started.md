@@ -73,6 +73,12 @@ The repository also supports config-driven runs through the CLI:
 abf simulate --config config/default.yaml
 ```
 
+Run the MUSIC direction-finding scenario:
+
+```bash
+abf simulate --config config/music_doa.yaml
+```
+
 This produces a JSON artifact in the configured output directory. For repeated trials:
 
 ```bash
@@ -82,7 +88,8 @@ abf montecarlo --config config/default.yaml --runs 50 --jobs 4
 The current runner supports:
 
 - `ula` and `planar` geometry
-- `conventional`, `mvdr`, `lms`, `nlms`, and `rls` weight selection
+- `conventional`, `mvdr`, `lcmv`, `lms`, `nlms`, and `rls` weight selection
+- `music` direction finding for ULA scenarios
 - one desired source plus zero or more interferers
 - threaded Monte Carlo execution through `--jobs`
 - optional HTML plot export
@@ -119,7 +126,7 @@ This toolkit is strongest as a simulation and algorithm-exploration environment.
 
 Keep these concrete limits in mind:
 
-- adaptive processing still uses narrowband or per-frequency-bin models rather than true time-delay wideband beamforming
+- adaptive processing still uses narrowband or per-frequency-bin models; true-time-delay support is currently an array-response model
 - MIMO and polarimetric support currently lives in the Python API helpers, not the CLI
 - the codebase targets offline research workflows rather than real-time embedded use
 

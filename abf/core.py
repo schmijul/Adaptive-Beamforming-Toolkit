@@ -10,6 +10,7 @@ from core.advanced_models import (
     element_pattern_gain,
     steering_weights_near_field_linear,
     synthesize_beamforming_architecture,
+    true_time_delay_array_factor_linear,
     wideband_array_factor_linear,
 )
 from core.beamforming import (
@@ -43,5 +44,6 @@ __all__ = [
     "steering_weights_near_field_linear",
     "steering_weights_planar",
     "synthesize_beamforming_architecture",
+    "true_time_delay_array_factor_linear",
     "wideband_array_factor_linear",
 ]

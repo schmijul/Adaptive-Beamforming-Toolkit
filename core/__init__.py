@@ -26,6 +26,7 @@ __all__ = [
     "steering_weights_near_field_linear",
     "steering_weights_planar",
     "synthesize_beamforming_architecture",
+    "true_time_delay_array_factor_linear",
     "wideband_array_factor_linear",
 ]
 

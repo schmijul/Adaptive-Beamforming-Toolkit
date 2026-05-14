@@ -28,6 +28,30 @@ def build_elevation_cut(theta_deg: np.ndarray, magnitude_db: np.ndarray, theta_s
     return fig
 
 
+def build_music_spectrum(theta_deg: np.ndarray, spectrum_db: np.ndarray, estimated_thetas_deg: np.ndarray) -> go.Figure:
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=theta_deg,
+            y=spectrum_db,
+            mode="lines",
+            name="MUSIC Spectrum",
+            line={"width": 3, "color": "#7c3aed"},
+        )
+    )
+    for theta in estimated_thetas_deg:
+        fig.add_vline(x=float(theta), line_dash="dash", line_color="#b91c1c")
+    fig.update_layout(
+        template="plotly_white",
+        title="MUSIC DoA Spectrum",
+        xaxis_title="Theta (deg)",
+        yaxis_title="Normalized Spectrum (dB)",
+        yaxis_range=[-60, 1],
+        margin={"l": 50, "r": 20, "t": 50, "b": 50},
+    )
+    return fig
+
+
 def build_heatmap(theta_deg: np.ndarray, phi_deg: np.ndarray, magnitude_db: np.ndarray) -> go.Figure:
     fig = go.Figure(
         data=go.Heatmap(

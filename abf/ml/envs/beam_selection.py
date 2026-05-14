@@ -75,6 +75,7 @@ class BeamSelectionEnv:
             array=base.array,
             desired_source=base.desired_source.__class__(theta_deg=theta, phi_deg=base.desired_source.phi_deg, snr_db=base.desired_source.snr_db),
             interference_sources=tuple(interferers),
+            constraint_sources=base.constraint_sources,
             algorithm=base.algorithm,
             sweep=base.sweep,
             output=base.output,

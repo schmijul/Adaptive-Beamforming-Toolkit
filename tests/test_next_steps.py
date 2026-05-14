@@ -2,16 +2,24 @@ from __future__ import annotations
 
 import numpy as np
 
-from algorithms.adaptive import doa_music_linear, linear_steering_vector, mvdr_weights
+from algorithms.adaptive import doa_music_linear, estimate_music_model_order, linear_steering_vector, mvdr_weights
 from core.advanced_models import (
     array_factor_linear_field_mode,
     array_factor_linear_with_impairments,
     build_mutual_coupling_matrix,
     synthesize_beamforming_architecture,
+    true_time_delay_array_factor_linear,
     wideband_array_factor_linear,
 )
 from core.beamforming import steering_weights_linear
-from data.iq import compare_sim_vs_measurement, load_iq_samples, simulate_array_iq
+from data.iq import (
+    apply_element_calibration,
+    compare_sim_vs_measurement,
+    estimate_element_calibration,
+    estimate_element_response,
+    load_iq_samples,
+    simulate_array_iq,
+)
 
 
 THETA = np.linspace(0.0, 180.0, 241)
@@ -78,6 +86,28 @@ def test_wideband_model_shows_beam_squint() -> None:
     assert abs(peak_lo - peak_hi) >= 4.0
 
 
+def test_true_time_delay_wideband_model_preserves_steering_angle() -> None:
+    freqs = np.array([8e9, 10e9, 12e9], dtype=float)
+    result = true_time_delay_array_factor_linear(
+        num_elements=16,
+        spacing_lambda=0.5,
+        theta_grid_deg=THETA_GRID,
+        phi_grid_deg=PHI_GRID,
+        theta_steer_deg=50.0,
+        phi_steer_deg=0.0,
+        center_frequency_hz=10e9,
+        frequency_hz=freqs,
+    )
+
+    peaks = []
+    for idx in range(freqs.size):
+        cut = result["magnitude"][idx, :, PHI_ZERO_INDEX]
+        peaks.append(float(THETA[int(np.argmax(cut))]))
+
+    assert result["delay_weights"].shape == (freqs.size, 16)
+    assert max(abs(peak - 50.0) for peak in peaks) <= 1.0
+
+
 def test_element_pattern_and_coupling_are_applied() -> None:
     coupling = build_mutual_coupling_matrix(num_elements=10, nearest_neighbor_db=-12.0, phase_deg=-20.0)
     impaired = array_factor_linear_with_impairments(
@@ -123,6 +153,34 @@ def test_mvdr_and_music_operate_on_simulated_snapshots() -> None:
     assert np.isclose(gain, 1.0 + 0.0j, atol=1e-2)
 
 
+def test_music_model_order_selection_estimates_source_count() -> None:
+    snapshots = simulate_array_iq(
+        num_elements=12,
+        num_snapshots=4096,
+        spacing_lambda=0.5,
+        source_thetas_deg=np.array([20.0, 45.0]),
+        source_phis_deg=np.array([0.0, 0.0]),
+        source_snr_db=np.array([22.0, 18.0]),
+        random_seed=11,
+    )
+    covariance = snapshots @ snapshots.conj().T / snapshots.shape[1]
+
+    order = estimate_music_model_order(covariance, num_snapshots=snapshots.shape[1], max_sources=4, method="mdl")
+    assert order["estimated_num_sources"] == 2
+
+    music = doa_music_linear(
+        snapshots=snapshots,
+        spacing_lambda=0.5,
+        theta_scan_deg=np.linspace(0.0, 90.0, 361),
+        num_sources="mdl",
+        max_sources=4,
+    )
+    estimates = np.asarray(music["estimated_thetas_deg"], dtype=float)
+    assert len(estimates) == 2
+    assert np.min(np.abs(estimates - 20.0)) <= 2.0
+    assert np.min(np.abs(estimates - 45.0)) <= 2.0
+
+
 def test_iq_import_and_overlay_metrics(tmp_path) -> None:
     n = 256
     t = np.linspace(0.0, 1.0, n, endpoint=False)
@@ -159,3 +217,21 @@ def test_measurement_overlay_works_with_steering_weights() -> None:
     )
     beamformed = np.conj(np.asarray(weights)) @ snapshots
     assert beamformed.shape == (1024,)
+
+
+def test_element_calibration_estimates_and_corrects_array_errors() -> None:
+    ideal = linear_steering_vector(6, 0.5, 25.0, 0.0)
+    true_error = np.array([1.0, 0.9 * np.exp(0.2j), 1.1 * np.exp(-0.15j), 0.8j, 1.05, np.exp(0.3j)])
+    reference_signal = np.exp(1j * np.linspace(0.0, 2.0 * np.pi, 128, endpoint=False))
+    measured_response = true_error * ideal
+    snapshots = measured_response[:, None] * reference_signal[None, :]
+
+    estimated_response = estimate_element_response(snapshots, reference_signal)
+    calibration = estimate_element_calibration(estimated_response, ideal)
+    corrected_response = apply_element_calibration(estimated_response, calibration["correction_weights"])
+    corrected_snapshots = apply_element_calibration(snapshots, calibration["correction_weights"])
+
+    assert np.allclose(estimated_response, measured_response)
+    assert np.allclose(calibration["element_error"], true_error / true_error[0])
+    assert np.allclose(corrected_response / corrected_response[0], ideal / ideal[0])
+    assert corrected_snapshots.shape == snapshots.shape

@@ -4,6 +4,8 @@ import numpy as np
 
 from abf.algorithms import (
     estimate_wideband_covariance_matrices,
+    lcmv_weights,
+    linear_steering_vector,
     lms_weights,
     mimo_virtual_steering_vector_linear,
     nlms_weights,
@@ -78,6 +80,20 @@ def test_wideband_mvdr_operates_per_frequency_bin() -> None:
 
     assert weights.shape == steering.shape
     assert np.allclose(distortionless, np.ones(freqs.size), atol=2e-2)
+
+
+def test_lcmv_weights_enforce_multiple_linear_constraints() -> None:
+    desired = linear_steering_vector(10, 0.5, 20.0, 0.0)
+    null = linear_steering_vector(10, 0.5, 55.0, 0.0)
+    covariance = np.eye(10, dtype=np.complex128)
+    constraints = np.column_stack([desired, null])
+    response = np.array([1.0, 0.0], dtype=np.complex128)
+
+    weights = lcmv_weights(covariance, constraints, response, diagonal_loading=0.0)
+
+    assert weights.shape == (10,)
+    assert np.isclose(np.vdot(weights, desired), 1.0 + 0.0j, atol=1e-10)
+    assert np.isclose(np.vdot(weights, null), 0.0 + 0.0j, atol=1e-10)
 
 
 def test_mimo_and_polarimetric_helpers_produce_stackable_channels() -> None:

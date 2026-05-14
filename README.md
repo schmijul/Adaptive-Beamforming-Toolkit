@@ -12,8 +12,9 @@ The current revision also adds a thin `abf.ml` layer for simulator-backed datase
 - wideband beam-squint analysis for phase-steered arrays
 - simplified element-pattern and mutual-coupling impairment modeling
 - MVDR/Capon, LMS, NLMS, and RLS beamforming plus MUSIC direction finding
-- frequency-domain wideband MVDR helpers and MIMO/polarimetric snapshot synthesis
+- true-time-delay wideband response evaluation, frequency-domain wideband MVDR helpers, and MIMO/polarimetric snapshot synthesis
 - IQ loading, synthesis, beamforming, and simulation-vs-measurement metrics
+- relative element-response calibration from known reference signals
 - config-driven simulation runs and optional Plotly HTML outputs
 - simulator-backed ML datasets, experiment runners, and environment wrappers
 
@@ -23,7 +24,7 @@ The codebase is functional and test-backed, but it is best treated as a compact 
 
 ## Current Limitations
 
-- adaptive processing is still built around narrowband or per-frequency-bin models; there is no true time-delay or STAP-style wideband beamforming path
+- adaptive processing is still built around narrowband or per-frequency-bin models; there is no STAP-style wideband adaptive beamforming path
 - MIMO and polarimetric support currently lives in the Python API helpers rather than the CLI or dashboard
 - the interactive dashboard remains a compact exploration UI rather than a full multi-geometry control surface
 - the toolkit is still research-oriented software, not a hard real-time embedded beamforming stack
@@ -123,6 +124,8 @@ The installed CLI entry point is `abf`.
 ```bash
 abf dashboard
 abf simulate --config config/default.yaml
+abf simulate --config config/lcmv_nulls.yaml
+abf simulate --config config/music_doa.yaml
 abf montecarlo --config config/default.yaml --runs 50 --jobs 4
 abf gallery --config config/default.yaml
 abf dataset --config config/ml/doa_regression.yaml
@@ -134,9 +137,9 @@ abf env-demo --config config/rl/beam_selection.yaml --steps 3
 Current runner scope:
 
 - array geometry: `ula`, `planar`
-- algorithms: `conventional`, `mvdr`, `lms`, `nlms`, `rls`
+- algorithms: `conventional`, `mvdr`, `lcmv`, `lms`, `nlms`, `rls`, `music`
 
-The broader Python API also includes wideband MVDR helpers plus MIMO and polarimetric snapshot utilities beyond the current YAML runner surface.
+`music` scenarios estimate ULA source directions and write the pseudospectrum plus `estimated_thetas_deg` into `simulate.json`. They can use a fixed source count or `model_order: aic` / `model_order: mdl` for covariance-based source-count selection. The broader Python API also includes wideband MVDR helpers plus MIMO and polarimetric snapshot utilities beyond the current YAML runner surface.
 
 ## Python Example
 

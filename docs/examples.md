@@ -88,6 +88,12 @@ This writes `simulate.json` to the configured output directory. The payload cont
 - complex-weight summaries
 - computed SINR
 
+Set `algorithm.name: music` for a ULA direction-finding scenario. In that mode, `simulate.json` contains the MUSIC pseudospectrum, `estimated_thetas_deg`, and the selected source count. Use `model_order: mdl` or `model_order: aic` when you want the runner to estimate the source count up to `num_sources`; when plot output is enabled, the runner writes `music_spectrum.html`.
+
+```bash
+abf simulate --config config/music_doa.yaml
+```
+
 Run repeated trials:
 
 ```bash

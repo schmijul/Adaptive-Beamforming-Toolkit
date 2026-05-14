@@ -114,9 +114,11 @@ P_{MUSIC}(\theta,\phi) =
 ```
 
 The code computes this over a scan grid and returns the largest peaks.
+When the source count is unknown, `estimate_music_model_order(...)` evaluates AIC or MDL over candidate source counts, and `doa_music_linear(..., num_sources="mdl")` can use that estimate before computing the pseudospectrum.
 
 Implemented entry points:
 
+- `algorithms.adaptive.estimate_music_model_order(...)`
 - `algorithms.adaptive.music_spectrum(...)`
 - `algorithms.adaptive.doa_music_linear(...)`
 
@@ -126,7 +128,7 @@ Reference figure:
 
 Important boundary:
 
-- the current helper requires the number of sources as an input parameter; it does not estimate model order
+- AIC/MDL model-order selection assumes the sample covariance has a clear signal/noise eigenvalue separation.
 
 ## 5. Near-Field Focusing
 
@@ -154,7 +156,7 @@ Reference figure:
 
 ![Near-field versus far-field](../imgs/alg-near-vs-far.png)
 
-## 6. Wideband Beam-Squint Analysis
+## 6. Wideband Response Analysis
 
 The wideband helper assumes phase-shifter weights are designed at a center frequency `f_0` and then evaluated at other frequencies. The effective electrical spacing scales as
 
@@ -163,10 +165,12 @@ d_{eff}(f) = d \frac{f}{f_0}
 ```
 
 so the beam direction changes with frequency. This is the classical beam-squint effect of phase-only steering.
+The true-time-delay helper instead scales the compensation phase with each evaluated frequency, so the intended steering direction remains aligned across the frequency grid.
 
-Implemented entry point:
+Implemented entry points:
 
 - `core.advanced_models.wideband_array_factor_linear(...)`
+- `core.advanced_models.true_time_delay_array_factor_linear(...)`
 
 Reference figure:
 
@@ -221,22 +225,23 @@ The repository's adaptive-processing surface now includes:
 
 - conventional steering is available as the deterministic baseline
 - MVDR/Capon for covariance-based adaptive nulling
+- LCMV for multiple linear response constraints, including explicit null constraints
 - LMS, NLMS, and RLS for supervised adaptive weight updates
 - per-frequency-bin wideband MVDR helpers for frequency-domain snapshot data
+- true-time-delay wideband response evaluation for ULA array factors
 - MUSIC is available for DoA estimation, not for adaptive weight synthesis
 - simple MIMO and polarimetric helper models in the Python API
 
 The repository does not currently ship dedicated implementations of:
 
 - Frost beamforming
-- a general LCMV solver
 - sparse recovery DoA estimators
-- STAP or true time-delay wideband beamforming
+- STAP and full waveform-level wideband adaptive beamforming
 
 Related boundaries:
 
 - MUSIC scanning remains ULA-centric
-- wideband adaptive processing is frequency-domain and per-bin, not a full waveform-preserving time-delay beamformer
+- adaptive wideband processing is frequency-domain and per-bin; true-time-delay support is currently an array-response model, not a full adaptive waveform processor
 - the MIMO and polarimetric paths are compact simulation helpers rather than a complete system model
 
 ## References

@@ -35,7 +35,7 @@ The current repository includes:
 
 ## Important Boundaries
 
-- The adaptive stack is still built around narrowband or per-frequency-bin models rather than true time-delay wideband processing.
+- The adaptive stack is still built around narrowband or per-frequency-bin models; true-time-delay support is currently an array-response model rather than a full adaptive waveform processor.
 - The CLI and YAML runner support ULA and planar arrays, but MIMO/polarimetric workflows remain Python-API-only.
 - The dashboard is intentionally smaller in scope than the Python API and simulation runner.
 - Execution targets research and teaching workflows, not hard real-time embedded operation.

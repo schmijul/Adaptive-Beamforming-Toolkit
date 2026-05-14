@@ -247,6 +247,65 @@ def beamform_iq(iq_snapshots: np.ndarray, weights: np.ndarray) -> np.ndarray:
     return np.conj(w) @ x
 
 
+def estimate_element_response(iq_snapshots: np.ndarray, reference_signal: np.ndarray) -> np.ndarray:
+    x = np.asarray(iq_snapshots, dtype=np.complex128)
+    ref = np.asarray(reference_signal, dtype=np.complex128).reshape(-1)
+    if x.ndim != 2:
+        raise ValueError("iq_snapshots must have shape (num_elements, num_snapshots)")
+    if ref.size != x.shape[1]:
+        raise ValueError("reference_signal length must match the snapshot count")
+
+    reference_power = float(np.vdot(ref, ref).real)
+    if reference_power <= 0.0:
+        raise ValueError("reference_signal must have nonzero power")
+    return (x @ np.conj(ref)) / reference_power
+
+
+def estimate_element_calibration(
+    measured_response: np.ndarray,
+    ideal_response: np.ndarray,
+    reference_element: int = 0,
+) -> dict[str, np.ndarray]:
+    measured = np.asarray(measured_response, dtype=np.complex128).reshape(-1)
+    ideal = np.asarray(ideal_response, dtype=np.complex128).reshape(-1)
+    if measured.size == 0:
+        raise ValueError("measured_response must be non-empty")
+    if measured.size != ideal.size:
+        raise ValueError("measured_response and ideal_response must have the same length")
+    if not (0 <= reference_element < measured.size):
+        raise ValueError("reference_element must index an array element")
+    if np.any(np.abs(ideal) <= 1e-15):
+        raise ValueError("ideal_response must not contain zero-magnitude entries")
+
+    element_error = measured / ideal
+    reference = element_error[reference_element]
+    if abs(reference) <= 1e-15:
+        raise ValueError("reference element response must be nonzero")
+    element_error = element_error / reference
+    correction = 1.0 / element_error
+
+    return {
+        "element_error": element_error,
+        "correction_weights": correction,
+        "amplitude_error_db": 20.0 * np.log10(np.maximum(np.abs(element_error), 1e-15)),
+        "phase_error_deg": np.rad2deg(np.angle(element_error)),
+    }
+
+
+def apply_element_calibration(iq_data: np.ndarray, correction_weights: np.ndarray) -> np.ndarray:
+    data = np.asarray(iq_data, dtype=np.complex128)
+    weights = np.asarray(correction_weights, dtype=np.complex128).reshape(-1)
+    if data.ndim == 1:
+        if data.size != weights.size:
+            raise ValueError("correction_weights length must match iq_data length")
+        return weights * data
+    if data.ndim == 2:
+        if data.shape[0] != weights.size:
+            raise ValueError("correction_weights length must match iq_data num_elements")
+        return weights[:, None] * data
+    raise ValueError("iq_data must be a vector or a matrix with shape (num_elements, num_snapshots)")
+
+
 def compare_sim_vs_measurement(simulated: np.ndarray, measured: np.ndarray) -> dict[str, float]:
     sim = np.asarray(simulated, dtype=np.complex128).reshape(-1)
     meas = np.asarray(measured, dtype=np.complex128).reshape(-1)

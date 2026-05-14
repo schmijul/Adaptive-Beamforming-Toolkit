@@ -9,7 +9,9 @@ from pathlib import Path
 import numpy as np
 
 from algorithms.adaptive import (
+    doa_music_linear,
     estimate_covariance_matrix,
+    lcmv_weights,
     linear_steering_vector,
     lms_weights,
     mvdr_weights,
@@ -21,7 +23,7 @@ from core.advanced_models import array_factor_planar_from_weights
 from core.beamforming import array_factor_linear_from_weights
 from data.iq import simulate_array_iq_components
 from simulations.config import ScenarioConfig
-from visualize.plots import build_elevation_cut, build_heatmap, build_pattern_3d, build_weights_plot
+from visualize.plots import build_elevation_cut, build_heatmap, build_music_spectrum, build_pattern_3d, build_weights_plot
 
 
 def _build_grids(config: ScenarioConfig) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
@@ -89,6 +91,23 @@ def _select_weights(config: ScenarioConfig, snapshots: np.ndarray, desired_signa
         return mvdr_weights(
             covariance_matrix=covariance,
             steering_vector=steer,
+            diagonal_loading=config.algorithm.diagonal_loading,
+        )
+
+    if config.algorithm.name == "lcmv":
+        covariance = estimate_covariance_matrix(snapshots, diagonal_loading=0.0)
+        constraint_vectors = [steer]
+        response = [1.0 + 0.0j]
+        for src in config.constraint_sources:
+            constraint_vectors.append(_steering_vector(config, src.theta_deg, src.phi_deg))
+            response.append(10.0 ** (src.snr_db / 20.0))
+        for src in config.interference_sources:
+            constraint_vectors.append(_steering_vector(config, src.theta_deg, src.phi_deg))
+            response.append(0.0 + 0.0j)
+        return lcmv_weights(
+            covariance_matrix=covariance,
+            constraint_matrix=np.column_stack(constraint_vectors),
+            response_vector=np.asarray(response, dtype=np.complex128),
             diagonal_loading=config.algorithm.diagonal_loading,
         )
 
@@ -169,10 +188,45 @@ def _evaluate_pattern(
 def _run_once(config: ScenarioConfig, seed: int) -> dict[str, object]:
     components = _simulate_components(config, seed=seed)
     snapshots = components["snapshots"]
+    theta, phi, theta_grid, phi_grid = _build_grids(config)
+
+    if config.algorithm.name == "music":
+        if config.array.geometry != "ula" or config.array.spacing_lambda is None:
+            raise ValueError("MUSIC scenarios currently require array.geometry: ula")
+
+        source_count: int | str = config.algorithm.num_sources
+        if config.algorithm.model_order != "fixed":
+            source_count = config.algorithm.model_order
+
+        music = doa_music_linear(
+            snapshots=snapshots,
+            spacing_lambda=config.array.spacing_lambda,
+            theta_scan_deg=theta,
+            num_sources=source_count,
+            phi_deg=config.desired_source.phi_deg,
+            diagonal_loading=config.algorithm.diagonal_loading,
+            max_sources=config.algorithm.num_sources,
+        )
+        spectrum = np.asarray(music["spectrum"], dtype=float)
+        spectrum_db = 10.0 * np.log10(np.maximum(spectrum / max(float(np.max(spectrum)), 1e-15), 1e-15))
+        estimated = np.asarray(music["estimated_thetas_deg"], dtype=float)
+        selected_sources = int(np.asarray(music["num_sources"], dtype=int))
+        result = {
+            "seed": seed,
+            "theta_scan_deg": theta.tolist(),
+            "music_spectrum": spectrum.tolist(),
+            "music_spectrum_db": spectrum_db.tolist(),
+            "estimated_thetas_deg": estimated.tolist(),
+            "num_sources": selected_sources,
+            "model_order": config.algorithm.model_order,
+        }
+        if "model_order_criterion" in music:
+            result["model_order_candidates"] = np.asarray(music["model_order_candidates"], dtype=int).tolist()
+            result["model_order_criterion"] = np.asarray(music["model_order_criterion"], dtype=float).tolist()
+        return result
+
     desired_signal = components["source_signals"][0]
     weights = _select_weights(config, snapshots, desired_signal=desired_signal)
-
-    theta, phi, theta_grid, phi_grid = _build_grids(config)
     pattern = _evaluate_pattern(config, weights, theta_grid_deg=theta_grid, phi_grid_deg=phi_grid)
     sinr_db = _calculate_sinr_db(config, weights)
 
@@ -201,6 +255,13 @@ def _run_once(config: ScenarioConfig, seed: int) -> dict[str, object]:
 
 
 def _write_plots(config: ScenarioConfig, result: dict[str, object], output_dir: Path) -> None:
+    if "music_spectrum_db" in result:
+        theta = np.asarray(result["theta_scan_deg"], dtype=float)
+        spectrum_db = np.asarray(result["music_spectrum_db"], dtype=float)
+        estimated = np.asarray(result["estimated_thetas_deg"], dtype=float)
+        build_music_spectrum(theta, spectrum_db, estimated).write_html(output_dir / "music_spectrum.html")
+        return
+
     theta = np.asarray(result["theta_deg"], dtype=float)
     phi = np.asarray(result["phi_deg"], dtype=float)
     magnitude_db = np.asarray(result["magnitude_db"], dtype=float)

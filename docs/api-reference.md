@@ -65,6 +65,8 @@ This module extends the ideal far-field model with simplified non-ideal or non-s
   Maps ideal weights to digital, analog, or hybrid approximations.
 - `wideband_array_factor_linear(...)`
   Evaluates a fixed-phase-steered array over multiple frequencies to show beam squint.
+- `true_time_delay_array_factor_linear(...)`
+  Evaluates frequency-dependent delay steering over multiple frequencies.
 - `build_mutual_coupling_matrix(...)`
   Constructs a simple distance-decay mutual-coupling matrix.
 - `element_pattern_gain(...)`
@@ -86,6 +88,8 @@ This module contains covariance-based adaptive processing helpers.
   Returns a narrowband planar steering vector with the same flattening order used by the core planar helpers.
 - `mvdr_weights(covariance_matrix, steering_vector, diagonal_loading=1e-3)`
   Computes MVDR/Capon weights.
+- `lcmv_weights(covariance_matrix, constraint_matrix, response_vector, diagonal_loading=1e-3)`
+  Computes linearly constrained minimum variance weights for one or more response constraints.
 - `lms_weights(snapshots, desired_signal, ...)`
   Runs complex LMS adaptation and returns final weights plus output and error traces.
 - `nlms_weights(snapshots, desired_signal, ...)`
@@ -104,6 +108,8 @@ This module contains covariance-based adaptive processing helpers.
   Stacks a spatial steering vector with a polarization response through a Kronecker product.
 - `music_spectrum(covariance_matrix, scan_manifold, num_sources)`
   Evaluates the MUSIC pseudospectrum for a scan manifold.
+- `estimate_music_model_order(covariance_matrix, num_snapshots, max_sources=None, method="mdl")`
+  Estimates source count with AIC or MDL.
 - `doa_music_linear(...)`
   Builds a ULA scan manifold over `theta_scan_deg`, computes the MUSIC spectrum, and returns peak estimates.
 
@@ -113,6 +119,7 @@ Typical output keys from `doa_music_linear(...)`:
 - `spectrum`
 - `estimated_thetas_deg`
 - `covariance_matrix`
+- `num_sources`
 
 ## `abf.data`
 
@@ -120,6 +127,12 @@ This module covers simple IQ ingest, synthesis, beamforming, and comparison.
 
 - `load_iq_samples(path)`
   Loads IQ data from `.npy`, `.npz`, `.csv`, or `.txt`.
+- `estimate_element_response(iq_snapshots, reference_signal)`
+  Estimates per-element complex response from a known reference waveform.
+- `estimate_element_calibration(measured_response, ideal_response, reference_element=0)`
+  Estimates relative element errors and correction weights against an ideal response.
+- `apply_element_calibration(iq_data, correction_weights)`
+  Applies per-element correction weights to a response vector or snapshot matrix.
 - `simulate_array_iq(...)`
   Generates ULA or planar-array snapshots from one or more synthetic sources plus noise.
 - `simulate_array_iq_components(...)`
@@ -147,7 +160,7 @@ The config-driven simulation runner is the backend behind the CLI.
 Current supported runner scope:
 
 - `array.geometry`: `ula`, `planar`
-- `algorithm.name`: `conventional`, `mvdr`, `lms`, `nlms`, `rls`
+- `algorithm.name`: `conventional`, `mvdr`, `lcmv`, `lms`, `nlms`, `rls`, `music`
 
 Common top-level return keys:
 
@@ -181,6 +194,7 @@ This module adds a thin experimentation layer on top of the simulator and classi
 These functions build the Plotly figures used by the dashboard and optional simulation outputs.
 
 - `build_elevation_cut(theta_deg, magnitude_db, theta_steer_deg)`
+- `build_music_spectrum(theta_deg, spectrum_db, estimated_thetas_deg)`
 - `build_heatmap(theta_deg, phi_deg, magnitude_db)`
 - `build_pattern_3d(theta_deg, phi_deg, magnitude)`
 - `build_weights_plot(positions_lambda, amplitudes, phase_weights)`

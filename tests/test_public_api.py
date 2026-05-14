@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 
 import abf
@@ -63,3 +65,19 @@ def test_abf_algorithms_and_data_modules_interoperate() -> None:
 def test_abf_simulations_loads_existing_yaml_scenarios() -> None:
     config = load_scenario_config("config/default.yaml")
     assert config.name == "baseline_mvdr"
+
+
+def test_top_level_scenario_configs_are_loadable() -> None:
+    configs = sorted(Path("config").glob("*.yaml"))
+    assert configs
+
+    loaded = [load_scenario_config(path) for path in configs]
+    assert {config.name for config in loaded} >= {"baseline_mvdr", "baseline_conventional", "music_doa", "lcmv_nulls"}
+
+
+def test_source_distribution_manifest_includes_user_facing_assets() -> None:
+    manifest = Path("MANIFEST.in").read_text(encoding="utf-8")
+
+    assert "recursive-include config *.yaml" in manifest
+    assert "recursive-include docs *.md" in manifest
+    assert "recursive-include examples *.py" in manifest

@@ -90,3 +90,53 @@ def test_cli_supports_planar_scenario(tmp_path) -> None:
     assert command_output["mode"] == "single"
     assert simulate_json["config"]["array"]["geometry"] == "planar"
     assert len(simulate_json["result"]["positions_xy_lambda"]) == 6
+
+
+def test_cli_supports_music_scenario(tmp_path) -> None:
+    payload = yaml.safe_load(Path("config/default.yaml").read_text(encoding="utf-8"))
+    payload["algorithm"] = {"name": "music", "num_sources": 1, "diagonal_loading": 0.001}
+    payload["interference_sources"] = []
+    payload["snapshots"] = 1024
+    payload["sweep"]["theta_stop_deg"] = 90.0
+    payload["sweep"]["theta_num"] = 181
+    payload["output"]["directory"] = str(tmp_path)
+    payload["output"]["save_plots"] = False
+    config_path = tmp_path / "music.yaml"
+    config_path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
+
+    completed = subprocess.run(
+        [sys.executable, "-m", "abf", "simulate", "--config", str(config_path)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    command_output = json.loads(completed.stdout)
+    simulate_json = json.loads((tmp_path / "simulate.json").read_text(encoding="utf-8"))
+
+    assert command_output["mode"] == "single"
+    assert simulate_json["config"]["algorithm"]["name"] == "music"
+    assert abs(simulate_json["result"]["estimated_thetas_deg"][0] - payload["desired_source"]["theta_deg"]) <= 2.0
+
+
+def test_cli_supports_lcmv_scenario(tmp_path) -> None:
+    payload = yaml.safe_load(Path("config/lcmv_nulls.yaml").read_text(encoding="utf-8"))
+    payload["snapshots"] = 512
+    payload["output"]["directory"] = str(tmp_path)
+    payload["output"]["save_plots"] = False
+    config_path = tmp_path / "lcmv.yaml"
+    config_path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
+
+    completed = subprocess.run(
+        [sys.executable, "-m", "abf", "simulate", "--config", str(config_path)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    command_output = json.loads(completed.stdout)
+    simulate_json = json.loads((tmp_path / "simulate.json").read_text(encoding="utf-8"))
+
+    assert command_output["mode"] == "single"
+    assert simulate_json["config"]["algorithm"]["name"] == "lcmv"
+    assert simulate_json["result"]["sinr_db"] > 10.0
